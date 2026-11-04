@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>عبور | حفلتك</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{color-scheme:light;--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ac:#c9a24b;--ok:#15803d;--okb:#dcfce7;--wn:#c2410c;--wnb:#ffedd5;--er:#b91c1c;--erb:#fee2e2}
 *{box-sizing:border-box}
@@ -15,12 +16,12 @@ html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Tajawal,syst
 body{min-height:100vh;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 header{position:sticky;top:0;z-index:10;background:var(--pr);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
 header .t{flex:1;min-width:0}
-header b{font-size:20px;font-weight:800;display:block}
+header b{font-size:20px;font-weight:800;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header small{opacity:.8;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header .out{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
-main{max-width:720px;margin:0 auto;padding:14px}
+main{max-width:860px;margin:0 auto;padding:14px}
 .tabs{position:sticky;top:64px;z-index:9;display:flex;gap:6px;background:var(--bg);padding:8px 0;overflow-x:auto}
-.tabs button{flex:1;white-space:nowrap;border:1px solid var(--bd);background:#fff;color:var(--mu);font:inherit;font-weight:700;padding:9px 12px;border-radius:10px;cursor:pointer}
+.tabs button{flex:0 0 auto;white-space:nowrap;border:1px solid var(--bd);background:#fff;color:var(--mu);font:inherit;font-weight:700;padding:9px 12px;border-radius:10px;cursor:pointer}
 .tabs button.on{background:var(--pr);color:#fff;border-color:var(--pr)}
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
 h2{margin:0 0 10px;font-size:18px}
@@ -29,25 +30,69 @@ h2{margin:0 0 10px;font-size:18px}
 .stat b{display:block;font-size:24px;font-weight:800;color:var(--pr)}.stat span{color:var(--mu);font-size:13px}
 .f{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
 label{font-size:12px;color:var(--mu);display:block;margin-bottom:3px}
-input,select,textarea{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx)}
-.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer}
+input,textarea,select{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx)}
+.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
 .btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-size:13px}
-.btn.d{background:var(--er)}
+.btn.g{background:var(--ac);color:#1b2430}
+.btn.d{background:var(--er);color:#fff}
 .btn:disabled{opacity:.5;cursor:default}
 .row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-wrap:wrap}
 .row:first-of-type{border-top:0}.grow{flex:1;min-width:150px}
 .tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;display:inline-block}
-.t-ok{background:var(--okb);color:var(--ok)}.t-er{background:var(--erb);color:var(--er)}.t-wn{background:var(--wnb);color:var(--wn)}.t-mu{background:var(--bg);color:var(--mu)}
+.t-ok{background:var(--okb);color:var(--ok)}.t-wn{background:var(--wnb);color:var(--wn)}.t-mu{background:var(--bg);color:var(--mu)}.t-er{background:var(--erb);color:var(--er)}
 .mu{color:var(--mu);font-size:13px}
 code{font-family:ui-monospace,monospace;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block}
-.msg{padding:10px;border-radius:12px;margin-top:10px;font-size:14px}
+.msg{padding:10px;border-radius:12px;margin-top:10px;font-size:14px;white-space:pre-wrap}
 .msg.ok{background:var(--okb);color:var(--ok)}.msg.err{background:var(--erb);color:var(--er)}
+.bubble{background:#dcf8c6;color:#111;border-radius:12px;padding:10px 12px;max-width:340px;white-space:pre-wrap;font-size:14px}
 #reader{width:100%;max-width:360px;margin:0 auto;border-radius:14px;overflow:hidden}
 #res{margin-top:12px;border-radius:16px;padding:20px 14px;text-align:center;display:none}
 #res .ic{font-size:50px;line-height:1}#res h2{font-size:22px;margin:6px 0}
 #res.ok{background:var(--okb);color:var(--ok)}#res.dup{background:var(--wnb);color:var(--wn)}#res.bad{background:var(--erb);color:var(--er)}
 .login{max-width:360px;margin:30px auto}
-@media(max-width:560px){.f{grid-template-columns:1fr}}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.gi{cursor:pointer;text-align:center;border:2px solid transparent;border-radius:12px;padding:6px;font-size:12px;font-weight:700;background:var(--bg)}
+.gi.on{border-color:var(--pr);background:#fff}
+.gw{position:relative;margin:0 auto 4px;overflow:hidden}
+.gw .pb{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+.badges{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+/* بطاقات */
+.pb{position:relative;width:90mm;height:130mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:9mm 6mm 5mm;color:var(--fg);text-align:center;font-family:Outfit,Tajawal,sans-serif;overflow:hidden;break-inside:avoid;page-break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:inset 0 0 0 .3mm #8884;background-size:auto}
+.pb.l4{flex-direction:row;padding:5mm 0 5mm 8mm;justify-content:flex-start;gap:4mm}
+.pb h4{margin:0;font-size:4.6mm;font-weight:800;line-height:1.2}
+.pb small{font-size:2.4mm;letter-spacing:.4mm;opacity:.85;display:block;font-weight:700}
+.pb .hd{display:flex;align-items:center;gap:2.5mm;text-align:start;direction:ltr}
+.pb .lg{height:11mm;max-width:22mm;object-fit:contain}
+.pb .lgp{width:11mm;height:11mm;border-radius:50%;background:var(--ac);color:#000;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:6mm}
+.pb .ct{background:var(--c);color:#fff;font-weight:800;font-size:6mm;letter-spacing:1mm;padding:1.2mm 9mm;border-radius:99px}
+.pb .nm{font-size:7.5mm;font-weight:800;line-height:1.15;unicode-bidi:plaintext}
+.pb .qr{background:#fff;padding:2.2mm;border-radius:3mm;box-shadow:0 0 0 .6mm var(--ac)}
+.pb .qr .q{width:38mm;height:38mm}.pb .qr .q img{width:100%;height:100%;display:block}
+.pb .vl{border-top:.3mm solid var(--ac);border-bottom:.3mm solid var(--ac);padding:1.5mm 4mm;width:100%}
+.pb .vl b{font-size:3.4mm;letter-spacing:.6mm;color:var(--ac);display:block}
+.pb .ft{font-size:2.1mm;letter-spacing:.3mm;opacity:.7}
+.pb .hole{position:absolute;top:3mm;left:50%;width:16mm;height:3mm;margin-left:-8mm;border-radius:2mm;background:#0005}
+.pb .side{width:24mm;align-self:stretch;background:var(--c);display:flex;align-items:center;justify-content:center}
+.pb .side span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:9mm;font-weight:800;color:#fff;letter-spacing:1.5mm}
+.pb .mn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;align-self:stretch;padding:9mm 4mm 5mm}
+.pb .lf{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;align-self:stretch;text-align:start;direction:ltr}
+.pb .rt{width:44mm;display:flex;flex-direction:column;align-items:center;justify-content:center;border-inline-start:.4mm dashed var(--ac);align-self:stretch}
+.pb.t2{border:2mm solid var(--c)}
+.pb.t1 .top{width:100%}
+.inv{position:relative;overflow:hidden;width:90mm;break-inside:avoid;page-break-inside:avoid;box-shadow:0 0 0 1px var(--bd)}
+.inv img.bgi{display:block;width:100%;height:auto}
+.qb{position:absolute;aspect-ratio:1;box-sizing:border-box;touch-action:none}
+.qb .q{width:100%;height:100%}.qb .q img{width:100%;height:100%;display:block}
+#qbE{cursor:move;outline:2px dashed #06b6d4}
+@media print{
+  @page{size:A4;margin:8mm}
+  body{background:#fff}
+  header,.tabs,.noprint{display:none!important}
+  main{padding:0;max-width:none}
+  .card{border:0;padding:0;margin:0}
+  .badges{gap:4mm;justify-content:flex-start}
+  .pb,.inv{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -66,44 +111,63 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const CAT = { vip:'VIP', media:'إعلام', fam:'عائلة', guest:'ضيف', org:'منظم', spk:'متحدث', exh:'عارض', cand:'متقدم' };
+const fmt = d => d ? new Date(d).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+const fd = d => d ? new Date(d + 'T00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() : '';
+const stat = (a, b) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`;
 const TOKEN = () => location.hash.replace('#', '').trim();
-let S = { ev: null, role: null, me: null, tab: 'guests', scanner: null };
+const CATS = {
+  vip:['VIP','#b8891b','VIP'], media:['إعلام','#2563eb','PRESS'], fam:['عائلة','#0f9d7a','FAMILY'],
+  guest:['ضيف','#64748b','GUEST'], org:['منظم','#c2410c','STAFF'], spk:['متحدث','#7c3aed','SPEAKER'],
+  exh:['عارض','#0891b2','EXHIBITOR'], cand:['متقدم','#059669','CANDIDATE']
+};
+const DEF_MSG = 'حيّاك الله {name} 🌹\n{مرحبا|هلا والله|حيّاك الله}، يسعدنا حضورك {event}.\nكود دخولك: {code}\nنراك على خير!';
+const S = { ev: null, role: null, tab: 'guests', scanner: null, key: null, guests: [], img: null, custom: null, sent: {} };
 
 function notice(sel, text, ok) { const el = $(sel); if (el) { el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; } }
-const stat = (a, b) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`;
 function updateToday() {
   $('#today').textContent = new Date().toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     + ' · ' + new Date().toLocaleDateString('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }) + ' هـ';
 }
-updateToday();
+function message(title, sub) {
+  $('#app').innerHTML = `<div class="card login" style="text-align:center"><div style="font-size:40px">🔒</div><h2>${esc(title)}</h2><p class="mu">${esc(sub)}</p></div>`;
+}
 
-/* ====== الحالة الأولى: فتح الرابط ====== */
+/* ====== ذكاء الأرقام: تحويل أي صيغة إلى دولي ====== */
+// القاعدة: 05xxxxxxxx ← 9665xxxxxxxx | 5xxxxxxxx ← 9665xxxxxxxx | 009665... و +966... تُنظّف تلقائيًا
+function normPhone(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('966')) return d;
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length === 9 && d.startsWith('5')) return '966' + d;
+  return d; // أرقام دول أخرى تُكتب بكودها: 00 ثم الكود
+}
+const validPhone = p => /^\d{11,15}$/.test(p);
+// يفصل الاسم عن الرقم في سطر واحد مهما كان ترتيبهما
+function parseLine(line) {
+  const m = line.match(/(\+?\d[\d\s-]{6,}\d)/);
+  if (!m) return { name: line.trim(), phone: '' };
+  return { name: line.replace(m[0], '').replace(/[,;|]/g, ' ').replace(/\s+/g, ' ').trim(), phone: normPhone(m[0]) };
+}
+
+/* ====== أول تحميل: فحص الرابط ====== */
 async function boot() {
+  updateToday();
   const token = TOKEN();
   if (!token) return message('الرابط غير مكتمل', 'افتح الرابط الذي أرسلته لك إدارة عبور.');
-
   const { data: link, error } = await sb.rpc('resolve_link', { p_token: token });
-  if (error) return message('تعذّر فتح الرابط', 'تأكد من الاتصال وحاول مرة أخرى.');
-
-  if (link.state === 'invalid') return message('الرابط غير صالح', 'تأكد من نسخ الرابط كاملًا.');
+  if (error || !link) return message('تعذّر فتح الرابط', 'تأكد من الاتصال وحاول مرة أخرى.');
+  if (link.state === 'invalid')   return message('الرابط غير صالح', 'تأكد من نسخ الرابط كاملًا.');
   if (link.state === 'suspended') return message('الحساب موقوف', 'تواصل مع الإدارة.');
-  if (link.state === 'not_yet') return message('الرابط لم يُفتح بعد', 'سيفتح في ' + fmt(link.opens_at));
-  if (link.state === 'closed') return message('انتهت المهلة', 'أُغلق هذا الرابط بعد ' + fmt(link.closes_at) + '. تواصل مع الإدارة للتمديد.');
-
-  // الرابط مفتوح: نسجّل الفتح (إحصائيات الإدارة) ثم نعرض الدخول
+  if (link.state === 'not_yet')   return message('الرابط لم يُفتح بعد', 'سيفتح في ' + fmt(link.opens_at));
+  if (link.state === 'closed')    return message('انتهت المهلة', 'أُغلق هذا الرابط في ' + fmt(link.closes_at) + '. تواصل مع الإدارة للتمديد.');
   sb.rpc('track_link', { p_token: token });
-  S.key = link.key; S.name = link.name;
+  S.key = link.key;
   $('#hname').textContent = link.name;
-
   const { data: sess } = await sb.auth.getSession();
   if (sess.session) return route();
   loginView();
-}
-
-const fmt = d => d ? new Date(d).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-function message(title, sub) {
-  $('#app').innerHTML = `<div class="card login" style="text-align:center"><div style="font-size:40px">🔒</div><h2>${esc(title)}</h2><p class="mu">${esc(sub)}</p></div>`;
 }
 
 /* ====== الدخول ====== */
@@ -122,9 +186,7 @@ function loginView() {
 async function login() {
   const u = $('#u').value.trim().toLowerCase(), p = $('#p').value;
   if (!u || !p) return notice('#lm', 'اكتب اسم المستخدم وكلمة المرور', false);
-  // الإيميل الداخلي المحسوب: <username>.<key>@users.aboor.app
-  const email = `${u}.${S.key}@users.aboor.app`;
-  const { error } = await sb.auth.signInWithPassword({ email, password: p });
+  const { error } = await sb.auth.signInWithPassword({ email: `${u}.${S.key}@users.aboor.app`, password: p });
   if (error) return notice('#lm', 'اسم المستخدم أو كلمة المرور غير صحيحة', false);
   route();
 }
@@ -140,27 +202,36 @@ async function route() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return loginView();
   const { data: m, error } = await sb.from('event_users')
-    .select('role,event_id,display_name,username,active').eq('auth_user_id', user.id).limit(1);
-  if (error || !m || !m.length || !m[0].active) {
-    await sb.auth.signOut();
-    return notice('#lm', 'لا تملك صلاحية لهذه المناسبة', false);
-  }
-  S.me = m[0]; S.role = m[0].role;
-  const { data: ev } = await sb.from('events').select('*').eq('id', S.me.event_id).single();
+    .select('role,event_id,display_name,username,active,auth_user_id').eq('auth_user_id', user.id).limit(1);
+  if (error || !m || !m.length || !m[0].active) { await sb.auth.signOut(); return loginView(); }
+  S.role = m[0].role;
+  const { data: ev, error: e2 } = await sb.from('events').select('*').eq('id', m[0].event_id).single();
+  if (e2 || !ev) { await sb.auth.signOut(); return loginView(); }
   S.ev = ev;
-  if (!ev.pkg_codes && S.role === 'reception') return message('الاستقبال غير مفعّل', 'تواصل مع الإدارة.');
-  if (S.role === 'reception') { S.tab = 'scan'; $('#hname').textContent = ev.name; $('#outBtn').style.display = 'inline-block'; return render(); }
-  S.tab = 'guests';
-  $('#hname').textContent = ev.name; $('#outBtn').style.display = 'inline-block';
+  $('#hname').textContent = ev.name;
+  $('#outBtn').style.display = 'inline-block';
+  if (S.role === 'reception') {
+    if (!ev.pkg_codes) return message('المسح غير مفعّل', 'تواصل مع الإدارة.');
+    S.tab = 'scan';
+  } else {
+    S.tab = 'guests';
+  }
   render();
 }
 
-/* ====== الواجهة الرئيسية ====== */
+/* ====== الواجهة ====== */
+function tabsList() {
+  if (S.role === 'reception') return [['scan', '📷 المسح']];
+  const t = [['guests', '👥 المدعوون']];
+  if (S.ev.pkg_msgs)  t.push(['msgs', '💬 الرسائل']);
+  if (S.ev.pkg_cards) t.push(['cards', '🪪 البطاقات']);
+  if (S.ev.pkg_codes) t.push(['staff', '🛂 الاستقبال'], ['scan', '📷 المسح']);
+  t.push(['stats', '📊 الإحصائيات']);
+  return t;
+}
+
 function render() {
-  const tabs = S.role === 'reception'
-    ? [['scan', '📷 المسح']]
-    : [['guests', '👥 المدعوون'], ...(S.ev.pkg_codes ? [['staff', '🛂 الاستقبال'], ['scan', '📷 المسح']] : []), ['stats', '📊 الإحصائيات']];
-  $('#app').innerHTML = `<div class="tabs">${tabs.map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join('')}</div><div id="view"></div>`;
+  $('#app').innerHTML = `<div class="tabs noprint">${tabsList().map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join('')}</div><div id="view"></div>`;
   paint();
 }
 
@@ -169,80 +240,375 @@ async function setTab(t) {
   S.tab = t; render();
 }
 
-function paint() {
-  ({ guests: vGuests, staff: vStaff, scan: vScan, stats: vStats })[S.tab]();
-}
+function paint() { ({ guests: vGuests, msgs: vMsgs, cards: vCards, staff: vStaff, scan: vScan, stats: vStats })[S.tab](); }
 
-/* ====== المدعوون ====== */
+/* ====== بيانات المدعوين ====== */
 async function loadGuests() {
-  const { data, error } = await sb.from('guests').select('id,name,phone,category,seats,used_count,code,first_entry_at').eq('event_id', S.ev.id).order('created_at');
+  const { data, error } = await sb.from('guests')
+    .select('id,name,phone,category,seats,used_count,code,first_entry_at,msg_status').eq('event_id', S.ev.id).order('created_at');
   if (error) throw error;
+  S.guests = data;
   return data;
 }
 
+/* ====== المدعوون ====== */
 async function vGuests() {
   const v = $('#view');
   v.innerHTML = '<div class="card mu">جارٍ التحميل...</div>';
   let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
-  const limit = S.ev.guest_limit, left = limit - G.length;
+  const limit = S.ev.guest_limit;
   v.innerHTML = `
-  <div class="grid">${stat(G.length + '/' + limit, 'المدعوون')}${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}${stat(left, 'متبقٍ')}</div>
+  <div class="grid">${stat(G.length + '/' + limit, 'المدعوون')}${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}${stat(limit - G.length, 'المتبقي')}</div>
   <div class="card">
     <h2>إضافة مدعو</h2>
     <div class="f">
       <div><label>الاسم</label><input id="gn"></div>
-      <div><label>الجوال (اختياري)</label><input id="gp" type="tel" style="direction:ltr" placeholder="9665xxxxxxxx"></div>
+      <div><label>الجوال (يكفي 05 أو 5 بدون رمز الدولة)</label><input id="gp" type="tel" style="direction:ltr" oninput="previewPhone(this.value)" placeholder="05xxxxxxxx"></div>
       <div><label>عدد الأشخاص</label><input id="gs" type="number" min="1" value="1"></div>
       <button class="btn" onclick="addGuest()">إضافة</button>
     </div>
-    <details style="margin-top:10px"><summary class="mu">إضافة قائمة (اسم ورقم في كل سطر)</summary>
-      <textarea id="bulk" rows="5" style="margin-top:6px" placeholder="أحمد 966501234567"></textarea>
+    <div class="mu" id="pp" style="margin-top:6px"></div>
+    <details style="margin-top:10px"><summary class="mu">إضافة قائمة كاملة (اسم ورقم في كل سطر، بأي ترتيب)</summary>
+      <textarea id="bulk" rows="5" style="margin-top:6px" placeholder="أحمد 0501234567&#10;خالد 966512345678&#10;05 555 1234 منى"></textarea>
       <button class="btn s" style="margin-top:6px" onclick="addBulk()">إضافة القائمة</button></details>
     <div id="gm"></div>
   </div>
   <div class="card"><h2>القائمة</h2>${G.map(guestRow).join('') || '<p class="mu">لا يوجد مدعوون بعد.</p>'}</div>`;
 }
 
+function previewPhone(v) {
+  const p = normPhone(v);
+  $('#pp').textContent = p ? (validPhone(p) ? `سيُحفظ: ${p}` : 'الرقم يبدو ناقصًا، تأكد منه') : '';
+}
+
 function guestRow(g) {
-  const inn = g.used_count >= g.seats;
+  const full = g.used_count >= g.seats;
   return `<div class="row"><div class="grow">
-      <b>${esc(g.name)}</b> <span class="mu">· ${CAT[g.category] || g.category}</span><br>
+      <b>${esc(g.name)}</b> <span class="mu">· ${CATS[g.category]?.[0] || esc(g.category)}</span><br>
       <span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone || 'بدون رقم')}${g.seats > 1 ? ' · ' + g.seats + ' أشخاص' : ''}</span></div>
-    <span class="tag ${g.used_count ? (inn ? 't-ok' : 't-wn') : 't-mu'}">${g.used_count ? `دخل ${g.used_count}/${g.seats}` : 'لم يحضر'}</span>
-    <code>${esc(g.code)}</code></div>`;
+    <span class="tag ${g.used_count ? (full ? 't-ok' : 't-wn') : 't-mu'}">${g.used_count ? `دخل ${g.used_count}/${g.seats}` : 'لم يحضر'}</span>
+    <button class="btn s" onclick="showQR('${g.id}')">📱 الباركود</button></div>`;
 }
 
 async function addGuest() {
-  const name = $('#gn').value.trim(); if (!name) return notice('#gm', 'اكتب الاسم', false);
-  const { error } = await sb.from('guests').insert({ event_id: S.ev.id, name, phone: $('#gp').value.replace(/\D/g, '') || null, seats: parseInt($('#gs').value) || 1 });
+  const name = $('#gn').value.trim();
+  if (!name) return notice('#gm', 'اكتب الاسم', false);
+  const raw = $('#gp').value.trim();
+  const phone = raw ? normPhone(raw) : null;
+  if (phone && !validPhone(phone)) return notice('#gm', 'الرقم غير صحيح، تأكد منه', false);
+  const { error } = await sb.from('guests').insert({ event_id: S.ev.id, name, phone, seats: parseInt($('#gs').value) || 1 });
   if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message, false);
   vGuests();
 }
 
 async function addBulk() {
   const lines = $('#bulk').value.split('\n').map(x => x.trim()).filter(Boolean);
-  const rows = lines.map(l => {
-    const m = l.match(/^(.*?)[\s,;]+(\+?[\d\s-]{8,})$/);
-    return { event_id: S.ev.id, name: m ? m[1].trim() : l, phone: m ? m[2].replace(/\D/g, '') : null, seats: 1 };
-  });
-  if (!rows.length) return notice('#gm', 'القائمة فارغة', false);
+  if (!lines.length) return notice('#gm', 'القائمة فارغة', false);
+  const rows = lines.map(parseLine).filter(r => r.name).map(r => ({
+    event_id: S.ev.id, name: r.name, phone: validPhone(r.phone) ? r.phone : null, seats: 1
+  }));
   const { error } = await sb.from('guests').insert(rows);
-  if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message + ' (ربما تجاوزت الحد)', false);
-  vGuests();
+  if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message, false);
+  notice('#gm', `أُضيف ${rows.length} مدعو، وتم تنظيف الأرقام تلقائيًا.`, true);
+  setTimeout(vGuests, 800);
 }
 
-/* ====== الاستقبال (حسابات الموظفين) ====== */
+function showQR(id) {
+  const g = S.guests.find(x => x.id === id);
+  if (!g) return;
+  QRCode.toDataURL(g.code, { width: 300, margin: 2, color: { dark: '#0f3d3e', light: '#ffffff' } }).then(url => {
+    const msg = `حيّاك الله ${g.name}\nكود دخولك إلى ${S.ev.name}: ${g.code}`;
+    const wa = g.phone ? `https://wa.me/${g.phone}?text=${encodeURIComponent(msg)}` : '';
+    const m = document.createElement('div');
+    m.id = 'qrm';
+    m.style.cssText = 'position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+    m.onclick = e => { if (e.target === m) m.remove(); };
+    m.innerHTML = `<div style="background:#fff;border-radius:18px;padding:18px;text-align:center;max-width:340px;width:100%">
+      <h2 style="margin:0 0 2px">${esc(g.name)}</h2><div class="mu">${esc(S.ev.name)}</div>
+      <img src="${url}" alt="باركود" style="width:240px;max-width:100%;margin:12px auto;display:block">
+      <code>${esc(g.code)}</code>
+      <div style="margin-top:12px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+        <a class="btn s" href="${url}" download="${esc(g.code)}.png">تنزيل الباركود</a>
+        ${wa ? `<a class="btn g" href="${wa}" target="_blank">إرسال واتساب</a>` : ''}
+        <button class="btn s" onclick="document.getElementById('qrm').remove()">إغلاق</button>
+      </div></div>`;
+    document.body.appendChild(m);
+  });
+}
+
+/* ====== الرسائل ====== */
+function spin(t, g) {
+  let h = 7; for (const c of g.id) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return t.replace(/\{([^{}|]+(?:\|[^{}|]+)+)\}/g, (_, a) => { const o = a.split('|'); return o[Math.abs(h + a.length) % o.length]; });
+}
+function msgText(g) {
+  return spin(S.ev.msg_template || DEF_MSG, g)
+    .replace(/\{name\}/g, g.name).replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
+}
+
+async function vMsgs() {
+  const v = $('#view');
+  let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+  const withPhone = G.filter(g => g.phone);
+  const pending = withPhone.filter(g => g.msg_status !== 'sent');
+  const tpl = S.ev.msg_template || DEF_MSG;
+  v.innerHTML = `
+  <div class="card">
+    <h2>💬 نص الدعوة</h2>
+    <textarea id="mt" rows="5">${esc(tpl)}</textarea>
+    <p class="mu">المتغيرات: {name} الاسم، {event} المناسبة، {code} الكود. ولتنويع النص اكتب الصيغ بين أقواس هكذا: {مرحبا|هلا|حيّاك الله}، فيختار النظام صيغة مختلفة لكل مدعو.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s" onclick="saveMsgTpl()">حفظ النص</button></div>
+    <div id="mm"></div>
+    <label style="margin-top:12px">صورة الدعوة (اختياري)</label>
+    <input type="file" accept="image/*" onchange="pickInvite(this)">
+    ${S.img ? `<img src="${S.img}" style="width:100%;max-width:260px;border-radius:10px;margin-top:8px">` : ''}
+  </div>
+  <div class="card"><h2>معاينة</h2><div class="bubble">${esc(withPhone[0] ? msgText(withPhone[0]) : 'أضف مدعوًا برقم جوال لترى المعاينة.')}</div></div>
+  <div class="card">
+    <h2>الإرسال</h2>
+    <div class="grid">${stat(withPhone.length, 'لديهم أرقام')}${stat(withPhone.length - pending.length, 'تم فتحها')}${stat(pending.length, 'متبقية')}</div>
+    <button class="btn g" ${pending.length ? '' : 'disabled'} onclick="sendOne('${pending[0]?.id || ''}')">إرسال التالي${pending[0] ? ': ' + esc(pending[0].name) : ''}</button>
+    ${S.img && pending.length ? ` <button class="btn s" onclick="shareWithImage('${pending[0].id}')">إرسال مع الصورة</button>` : ''}
+    <p class="mu">كل ضغطة تفتح واتساب برسالة المدعو جاهزة، وتضغط إرسال بنفسك. هذا آمن ويقلل خطر الحظر. الإرسال الآلي الكامل يحتاج خدمة على السيرفر، وسنضيفها لاحقًا.</p>
+  </div>
+  <div class="card">${withPhone.map(g => `<div class="row"><div class="grow"><b>${esc(g.name)}</b><br><span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone)}</span></div>
+    <span class="tag ${g.msg_status === 'sent' ? 't-ok' : 't-mu'}">${g.msg_status === 'sent' ? 'تم الفتح' : 'لم تُرسل'}</span>
+    <button class="btn s" onclick="sendOne('${g.id}')">إرسال</button></div>`).join('') || '<p class="mu">لا يوجد مدعوون بأرقام بعد.</p>'}</div>`;
+}
+
+async function saveMsgTpl() {
+  const t = $('#mt').value.trim();
+  const { error } = await sb.from('events').update({ msg_template: t }).eq('id', S.ev.id);
+  if (error) return notice('#mm', 'تعذّر الحفظ: ' + error.message, false);
+  S.ev.msg_template = t;
+  notice('#mm', 'تم حفظ النص.', true);
+}
+
+function pickInvite(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { S.img = r.result; vMsgs(); };
+  r.readAsDataURL(f);
+}
+
+async function sendOne(id) {
+  const g = S.guests.find(x => x.id === id);
+  if (!g || !g.phone) return;
+  window.open(`https://wa.me/${g.phone}?text=${encodeURIComponent(msgText(g))}`, '_blank');
+  await sb.from('guests').update({ msg_status: 'sent', sent_at: new Date().toISOString() }).eq('id', g.id);
+  setTimeout(vMsgs, 1200);
+}
+
+async function shareWithImage(id) {
+  const g = S.guests.find(x => x.id === id);
+  if (!g || !S.img) return;
+  try {
+    const blob = await (await fetch(S.img)).blob();
+    const file = new File([blob], 'invite.jpg', { type: blob.type || 'image/jpeg' });
+    if (!navigator.canShare || !navigator.canShare({ files: [file] })) return alert('جهازك لا يدعم مشاركة الصور، استخدم زر الإرسال العادي.');
+    await navigator.share({ files: [file], text: msgText(g) });
+    await sb.from('guests').update({ msg_status: 'sent', sent_at: new Date().toISOString() }).eq('id', g.id);
+    setTimeout(vMsgs, 800);
+  } catch (e) { /* أُلغيت المشاركة */ }
+}
+
+/* ====== البطاقات ====== */
+// [الاسم، الوسم الإنجليزي، التخطيط 1-4، الشكل، النوع r/o/s، الخلفية، لون النص، لون التمييز]
+const TP = [
+ ['مؤتمر تقنية','TECH SUMMIT',1,'cut','r','radial-gradient(circle at 90% 0,#22d3ee55,#0000 50%),linear-gradient(#ffffff12 1px,#0000 1px) 0 0/5mm 5mm,linear-gradient(90deg,#ffffff12 1px,#0000 1px) 0 0/5mm 5mm,#0a1128','#fff','#22d3ee'],
+ ['بيانات وذكاء اصطناعي','DATA & AI CONFERENCE',3,'r','r','radial-gradient(#ffffff30 1px,#0000 1.5px) 0 0/4mm 4mm,linear-gradient(150deg,#4c1d95,#be185d)','#fff','#fbcfe8'],
+ ['معرض عقارات','REAL ESTATE EXPO',3,'arch','r','repeating-linear-gradient(90deg,#3b2a1a14 0 6mm,#0000 6mm 9mm) bottom/100% 26mm no-repeat,linear-gradient(#e8dcc5,#f7f1e4 60%)','#3b2a1a','#a16207'],
+ ['هندسة وإنشاءات','BUILD & ENGINEERING FORUM',2,'r','r','linear-gradient(#ffffff26 1px,#0000 1px) 0 0/4mm 4mm,linear-gradient(90deg,#ffffff26 1px,#0000 1px) 0 0/4mm 4mm,#0d4a8f','#fff','#fde047'],
+ ['معرض توظيف','CAREER FAIR',1,'pill','r','radial-gradient(circle at 0 100%,#5eead480,#0000 45%),radial-gradient(circle at 100% 0,#a5f3fc99,#0000 40%),#f0fdfa','#134e4a','#0d9488'],
+ ['مؤتمر تنفيذي','EXECUTIVE CONFERENCE',1,'oct','r','linear-gradient(135deg,#ffffff0a 25%,#0000 25% 50%,#ffffff0a 50% 75%,#0000 75%) 0 0/6mm 6mm,#0c0c0f','#f3e9d0','#d4af37'],
+ ['تذكرة مرة واحدة','ONE-TIME ENTRY TICKET',4,'tab','o','linear-gradient(100deg,#ff6a00,#ee0979)','#fff','#fff7ed'],
+ ['VIP ذهبي','VIP ACCESS',3,'arch','r','radial-gradient(circle at 50% 0,#d4af3755,#0000 55%),linear-gradient(#0f3d2e,#06251b)','#fdf3d0','#d4af37'],
+ ['صحافة وإعلام','PRESS PASS',2,'diag','r','linear-gradient(115deg,#0000 55%,#dc262622 55% 70%,#0000 70%),#fafafa','#111','#dc2626'],
+ ['طاقم العمل','STAFF',1,'r','s','repeating-linear-gradient(135deg,#a3e63514 0 3mm,#0000 3mm 6mm),#0b0b0b','#fff','#a3e635'],
+ ['حفل زفاف','WEDDING INVITATION',3,'pill','o','radial-gradient(circle at 50% 100%,#f4c2c280,#0000 60%),#fff8f1','#5b3a3a','#b76e79'],
+ ['حفل مسائي','GALA NIGHT',3,'rib','r','radial-gradient(#f0c05a55 1px,#0000 2px) 0 0/5mm 5mm,linear-gradient(160deg,#5b0a23,#25040f)','#fde8c8','#f0c05a'],
+ ['مؤتمر طبي','MEDICAL CONGRESS',1,'r','r','radial-gradient(circle at 100% 0,#38bdf855,#0000 50%),#f0f9ff','#0c4a6e','#0284c7'],
+ ['يوم جامعي','UNIVERSITY DAY',2,'cut','r','linear-gradient(#0000 70%,#f9731644),#1e3a8a','#fff','#fb923c'],
+ ['مهرجان موسيقي','MUSIC FESTIVAL',3,'diag','r','radial-gradient(circle at 20% 90%,#facc15aa,#0000 40%),linear-gradient(160deg,#7c3aed,#ec4899 55%,#f97316)','#fff','#fef08a'],
+ ['حدث رياضي','SPORTS EVENT',1,'r','r','repeating-linear-gradient(90deg,#ffffff12 0 8mm,#0000 8mm 16mm),#15803d','#fff','#fde047'],
+ ['ألعاب إلكترونية','ESPORTS ARENA',4,'cut','r','linear-gradient(115deg,#ff00aa33,#0000 40%),linear-gradient(#ffffff0d 1px,#0000 1px) 0 0/4mm 4mm,#0a0a14','#fff','#00f0ff'],
+ ['تذكرة يوم واحد','DAY PASS',4,'tab','r','repeating-linear-gradient(90deg,#ffffff14 0 2mm,#0000 2mm 4mm),linear-gradient(120deg,#0f766e,#14b8a6)','#fff','#fef3c7'],
+ ['بسيط أنيق','MINIMAL PASS',3,'r','r','#f5f5f4','#111','#111'],
+ ['تراث وصحراء','MAJLIS HERITAGE',1,'cut','r','repeating-conic-gradient(#c2410c18 0 25%,#0000 0 50%) 0 0/8mm 8mm,#f6ead2','#4a2511','#c2410c']
+];
+const TM = '-webkit-mask:radial-gradient(circle at 0 50%,#0000 4mm,#000 4.2mm) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,#0000 4mm,#000 4.2mm) right/51% 100% no-repeat;mask:radial-gradient(circle at 0 50%,#0000 4mm,#000 4.2mm) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,#0000 4mm,#000 4.2mm) right/51% 100% no-repeat';
+const SH = {
+  r:'border-radius:6mm', pill:'border-radius:26mm', arch:'border-radius:45mm 45mm 6mm 6mm',
+  cut:'clip-path:polygon(0 7mm,7mm 0,100% 0,100% calc(100% - 7mm),calc(100% - 7mm) 100%,0 100%)',
+  oct:'clip-path:polygon(10mm 0,calc(100% - 10mm) 0,100% 10mm,100% calc(100% - 10mm),calc(100% - 10mm) 100%,10mm 100%,0 calc(100% - 10mm),0 10mm)',
+  diag:'clip-path:polygon(0 0,calc(100% - 14mm) 0,100% 14mm,100% 100%,14mm 100%,0 calc(100% - 14mm))',
+  rib:'clip-path:polygon(0 0,100% 0,100% calc(100% - 9mm),50% 100%,0 calc(100% - 9mm));padding-bottom:11mm',
+  tab: TM + ';border-radius:3mm'
+};
+
+function badgeHTML(g, i) {
+  const [, , L, sh, k, bg, fg, ac] = TP[i];
+  const c = CATS[g.category] || CATS.guest;
+  const lg = S.ev.logo_url ? `<img class="lg" src="${esc(S.ev.logo_url)}">` : `<i class="lgp">${esc((S.ev.name || 'ع')[0])}</i>`;
+  const d1 = fd(S.ev.starts_on), d2 = fd(S.ev.ends_on || S.ev.starts_on);
+  const dr = d1 === d2 ? d1 : d1 + ' → ' + d2;
+  const vl = k === 'o' ? '<div class="vl"><b>SINGLE ENTRY</b><small>VOID AFTER FIRST SCAN</small></div>'
+           : k === 's' ? `<div class="vl"><b>STAFF · ALL ACCESS</b><small>${dr}</small></div>`
+           : `<div class="vl"><b>VALID</b><small>${dr}</small></div>`;
+  const hd = `<div class="hd">${lg}<div><small>${TP[i][1]}</small><h4>${esc(S.ev.name)}</h4></div></div>`;
+  const ct = `<div class="ct">${c[2]}</div>`, nm = `<div class="nm">${esc(g.name)}</div>`;
+  const q = `<div class="qr"><div class="q" data-c="${esc(g.code)}"></div></div>`;
+  const ft = `<div class="ft">POWERED BY ABOOR · ${esc(g.code)}</div>`;
+  let h;
+  if (L === 1) h = hd + ct + nm + q + vl + ft;
+  else if (L === 2) h = `<div class="side"><span>${c[2]}</span></div><div class="mn">${hd}${nm}${q}${vl}${ft}</div>`;
+  else if (L === 3) h = hd + nm + ct + q + vl + ft;
+  else h = `<div class="lf">${hd}${nm}${ct}${vl}${ft}</div><div class="rt">${q}</div>`;
+  return `<div class="pb ${L === 4 ? 'l4' : ''} ${L === 4 ? '' : ''}" style="--c:${c[1]};--fg:${fg};--ac:${ac};background:${bg};${SH[sh]}">${L === 4 ? '' : '<i class="hole"></i>'}${h}</div>`;
+}
+
+function customHTML(g) {
+  const cu = S.custom;
+  return `<div class="inv" style="width:90mm"><img class="bgi" src="${cu.src}">
+    <div class="qb" style="left:${cu.x * 100}%;top:${cu.y * 100}%;width:${cu.s * 100}%;${cu.wb ? 'background:#fff;padding:1.2%' : ''}">
+      <div class="q" data-c="${esc(g.code)}"></div></div></div>`;
+}
+
+function fillQR(root) {
+  root.querySelectorAll('[data-c]').forEach(el => {
+    QRCode.toDataURL(el.dataset.c, { margin: 1, width: 300, color: { dark: '#000000', light: '#ffffff' } })
+      .then(u => el.innerHTML = `<img src="${u}" alt="">`);
+  });
+}
+
+async function vCards() {
+  const v = $('#view');
+  let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+  const sample = { name: 'Sample Name', category: 'vip', code: 'SAMPLE000000' };
+  const cur = S.ev.badge_template ?? 0;
+  const isCustom = cur === 'custom';
+  v.innerHTML = `
+  <div class="card noprint">
+    <h2>🪪 اختر التصميم (${TP.length})</h2>
+    <p class="mu">اختر تصميمًا ليُطبع لكل المدعوين. المختار الآن: <b>${isCustom ? 'دعوتك الخاصة' : (cur + 1) + '. ' + TP[cur][0]}</b></p>
+    <div class="gallery">${TP.map((t, i) => `<div class="gi ${!isCustom && cur === i ? 'on' : ''}" onclick="pickTpl(${i})">
+      <div class="gw" style="width:122px;height:177px"><div style="transform:scale(.36);transform-origin:0 0;width:90mm;height:130mm;position:absolute;left:0;top:0">${badgeHTML(sample, i)}</div></div>
+      ${i + 1}. ${t[0]}</div>`).join('')}</div>
+    <div class="gi ${isCustom ? 'on' : ''}" style="margin-top:10px" onclick="pickTpl('custom')">✨ دعوتك الخاصة (ارفع تصميمك)</div>
+  </div>
+  <div class="card noprint">
+    <h2>✨ دعوتك الخاصة</h2>
+    <p class="mu">ارفع تصميم الدعوة، وسيقترح النظام مكانًا فارغًا للباركود تلقائيًا. تقدر تسحبه لأي مكان وتكبّره أو تصغّره.</p>
+    <input type="file" accept="image/*" onchange="uploadCustom(this)">
+    ${S.custom ? `<div id="qe" style="position:relative;max-width:360px;margin:12px auto;user-select:none">
+      <img src="${S.custom.src}" style="width:100%;display:block;border-radius:8px">
+      <div id="qbE" class="qb" style="left:${S.custom.x * 100}%;top:${S.custom.y * 100}%;width:${S.custom.s * 100}%;${S.custom.wb ? 'background:#fff;padding:1.2%' : ''}"><div class="q" data-c="${sample.code}"></div></div>
+    </div>
+    <label>حجم الباركود</label><input type="range" min="10" max="45" value="${Math.round(S.custom.s * 100)}" oninput="customSize(this.value)">
+    <label class="chk" style="margin-top:6px;display:flex;gap:6px;align-items:center"><input type="checkbox" style="width:auto" ${S.custom.wb ? 'checked' : ''} onchange="customWhite(this.checked)"> خلفية بيضاء خلف الباركود (تُسهّل المسح)</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn s" onclick="autoPlace()">✨ اقتراح تلقائي</button>
+      <button class="btn g" onclick="saveTpl('custom')">حفظ واعتماد</button>
+    </div>` : ''}
+  </div>
+  <div class="card noprint" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+    <span class="mu">${G.length} بطاقة جاهزة للطباعة (مقاس 9×13 سم، على A4)</span>
+    <button class="btn g" onclick="window.print()">🖨 طباعة</button>
+  </div>
+  <div class="badges">${G.map(g => isCustom && S.custom ? customHTML(g) : badgeHTML(g, cur)).join('') || '<p class="mu">لا يوجد مدعوون بعد.</p>'}</div>`;
+  fillQR(v);
+  if (S.custom) bindDrag();
+}
+
+async function pickTpl(i) {
+  if (i === 'custom' && !S.custom) return alert('ارفع تصميم دعوتك أولًا.');
+  S.ev.badge_template = i;
+  await sb.from('events').update({ badge_template: i === 'custom' ? null : i }).eq('id', S.ev.id);
+  vCards();
+}
+
+async function saveTpl() {
+  S.ev.badge_template = 'custom';
+  await sb.from('events').update({ badge_template: null }).eq('id', S.ev.id);
+  vCards();
+}
+
+function uploadCustom(inp) {
+  const f = inp.files[0]; if (!f) return;
+  const im = new Image();
+  im.onload = () => {
+    const k = Math.min(1, 1000 / Math.max(im.width, im.height));
+    const w = Math.round(im.width * k), h = Math.round(im.height * k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h);
+    S.custom = { src: c.toDataURL('image/jpeg', .85), w, h, x: .35, y: .7, s: .22, wb: true, ratio: h / w };
+    autoPlace(c);
+    vCards();
+  };
+  im.src = URL.createObjectURL(f);
+}
+
+// يبحث عن أهدأ منطقة (أقل تباين) في أسفل الصورة ليضع فيها الباركود
+function autoPlace(canvas) {
+  const cu = S.custom; if (!cu) return;
+  const src = canvas || (() => { const im = new Image(); im.src = cu.src; const c = document.createElement('canvas'); c.width = cu.w; c.height = cu.h; c.getContext('2d').drawImage(im, 0, 0); return c; })();
+  const W = 80, H = Math.max(8, Math.round(W * src.height / src.width));
+  const t = document.createElement('canvas'); t.width = W; t.height = H;
+  const x = t.getContext('2d'); x.drawImage(src, 0, 0, W, H);
+  const d = x.getImageData(0, 0, W, H).data, L = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) L[i] = .3 * d[i * 4] + .59 * d[i * 4 + 1] + .11 * d[i * 4 + 2];
+  const q = Math.max(4, Math.round(cu.s * W)), n = q * q;
+  let best = [.6, .7], bs = 1e18;
+  for (let y = 0; y + q <= H; y += 2) for (let u = 0; u + q <= W; u += 2) {
+    let a = 0, b = 0;
+    for (let j = y; j < y + q; j += 2) for (let i = u; i < u + q; i += 2) { const v = L[j * W + i]; a += v; b += v * v; }
+    const cnt = (q / 2) ** 2, m = a / cnt, sc = b / cnt - m * m + (1 - (y + q / 2) / H) * 30;
+    if (sc < bs) { bs = sc; best = [u / W, y / H]; }
+  }
+  cu.x = Math.min(best[0], 1 - cu.s); cu.y = Math.min(best[1], 1 - cu.s * cu.ratio);
+  if (!canvas) vCards();
+}
+
+function customSize(n) {
+  const cu = S.custom; cu.s = n / 100;
+  cu.x = Math.min(cu.x, 1 - cu.s); cu.y = Math.min(cu.y, 1 - cu.s * cu.ratio);
+  placeQB(); 
+}
+function customWhite(on) { S.custom.wb = on; placeQB(); }
+function placeQB() {
+  const b = $('#qbE'), cu = S.custom; if (!b) return;
+  b.style.left = cu.x * 100 + '%'; b.style.top = cu.y * 100 + '%'; b.style.width = cu.s * 100 + '%';
+  b.style.background = cu.wb ? '#fff' : 'none'; b.style.padding = cu.wb ? '1.2%' : '0';
+}
+
+function bindDrag() {
+  const b = $('#qbE'), box = $('#qe'); if (!b || !box) return;
+  b.onpointerdown = ev => {
+    ev.preventDefault(); b.setPointerCapture(ev.pointerId);
+    const r = box.getBoundingClientRect(), cu = S.custom, x0 = cu.x, y0 = cu.y, px = ev.clientX, py = ev.clientY;
+    b.onpointermove = m => {
+      cu.x = Math.min(Math.max((x0 + (m.clientX - px) / r.width), 0), 1 - cu.s);
+      cu.y = Math.min(Math.max((y0 + (m.clientY - py) / r.height), 0), 1 - cu.s * cu.ratio);
+      placeQB();
+    };
+    b.onpointerup = () => { b.onpointermove = null; };
+  };
+}
+
+/* ====== حسابات الاستقبال ====== */
 async function vStaff() {
   const v = $('#view');
-  const { data: st } = await sb.from('event_users').select('id,auth_user_id,username,display_name,scans_ok,active')
-    .eq('event_id', S.ev.id).eq('role', 'reception').order('created_at');
+  const { data: st, error } = await sb.from('event_users')
+    .select('auth_user_id,username,display_name,scans_ok').eq('event_id', S.ev.id).eq('role', 'reception').order('created_at');
+  if (error) return v.innerHTML = `<div class="msg err">${esc(error.message)}</div>`;
   const L = st || [];
   const can = L.length < S.ev.staff_limit;
   v.innerHTML = `
   <div class="card">
     <h2>🛂 حسابات الاستقبال</h2>
-    <p class="mu">باقتك تشمل ${S.ev.staff_limit} حسابات، وأضفت ${L.length}. يدخل الموظف من نفس الرابط بالمستخدم وكلمة المرور، ويفتح له المسح فقط.</p>
-    ${can ? `<div class="f"><div><label>اسم الموظف</label><input id="sn"></div>
+    <p class="mu">باقتك تشمل ${S.ev.staff_limit} حسابات، أضفت ${L.length}. يدخل الموظف من نفس الرابط بمستخدمه وكلمة مروره، ويفتح له المسح فقط.</p>
+    ${can ? `<div class="f">
+      <div><label>اسم الموظف</label><input id="sn"></div>
       <div><label>اسم المستخدم</label><input id="su" style="direction:ltr"></div>
       <div><label>كلمة المرور</label><input id="sp" style="direction:ltr" value="${Math.random().toString(36).slice(2, 8)}"></div>
       <button class="btn" onclick="addStaff()">إضافة</button></div>` : '<span class="tag t-wn">وصلت للحد المسموح</span>'}
@@ -250,7 +616,7 @@ async function vStaff() {
   </div>
   <div class="card">${L.map(s => `<div class="row"><div class="grow"><b>${esc(s.display_name || s.username)}</b><br>
       <span class="mu">المستخدم <code>${esc(s.username)}</code> · مسح ${s.scans_ok}</span></div>
-      <button class="btn s d" style="color:#fff" onclick="removeStaff('${s.auth_user_id}')">حذف</button></div>`).join('') || '<p class="mu">لا توجد حسابات استقبال بعد.</p>'}</div>`;
+      <button class="btn s" onclick="removeStaff('${s.auth_user_id}')">حذف</button></div>`).join('') || '<p class="mu">لا توجد حسابات استقبال بعد.</p>'}</div>`;
 }
 
 async function addStaff() {
@@ -259,7 +625,7 @@ async function addStaff() {
   const { error } = await sb.rpc('owner_create_staff', { p_name: name, p_username: user, p_password: pass });
   if (error) return notice('#sm', 'تعذّر الإضافة: ' + error.message, false);
   notice('#sm', `تمت الإضافة. المستخدم: ${user} · كلمة المرور: ${pass}`, true);
-  setTimeout(vStaff, 2500);
+  setTimeout(vStaff, 3000);
 }
 
 async function removeStaff(uid) {
@@ -275,8 +641,10 @@ function vScan() {
   <div class="card">
     <div id="reader"></div>
     <div style="text-align:center;margin:10px 0"><button class="btn" id="camBtn" onclick="toggleCam()">تشغيل الكاميرا</button></div>
-    <div class="f"><div><label>أو أدخل الكود يدويًا</label><input id="man" style="direction:ltr;text-transform:uppercase"></div>
-      <button class="btn g" style="background:var(--ac);color:#1b2430" onclick="check($('#man').value)">تحقق</button></div>
+    <div class="f">
+      <div><label>أو أدخل الكود يدويًا</label><input id="man" style="direction:ltr;text-transform:uppercase"></div>
+      <button class="btn g" onclick="check($('#man').value)">تحقق</button>
+    </div>
     <div id="res"></div>
   </div>`;
 }
@@ -293,30 +661,43 @@ async function toggleCam() {
   } catch (e) { S.scanner = null; alert('تعذّر تشغيل الكاميرا. امنح الإذن أو استخدم الإدخال اليدوي.'); }
 }
 
+const SCAN_MAP = {
+  ok:        { cls: 'ok',  ic: '✅', t: 'مسموح بالدخول' },
+  duplicate: { cls: 'dup', ic: '⚠', t: 'تم استخدام الكود' },
+  invalid:   { cls: 'bad', ic: '❌', t: 'كود غير مسجل' },
+  closed:    { cls: 'bad', ic: '⛔', t: 'المناسبة مغلقة' },
+  no_access: { cls: 'bad', ic: '⛔', t: 'المسح غير مفعّل' }
+};
+
 async function check(raw) {
-  const code = String(raw || '').trim().toUpperCase(); if (!code) return;
-  const { data, error } = await sb.rpc('scan_code', { p_code: code });
+  const code = String(raw || '').trim().toUpperCase();
+  if (!code) return;
   const box = $('#res');
-  if (error) { box.className = 'bad'; box.style.display = 'block'; box.innerHTML = `<div class="ic">⚠</div><h2>تعذّر المسح</h2><div>${esc(error.message)}</div>`; return; }
-  const map = {
-    ok:        { cls: 'ok',  ic: '✅', t: 'مسموح بالدخول', s: `${data.name} · ${CAT[data.category] || ''}${data.seats > 1 ? ` · دخل ${data.used} من ${data.seats}` : ''}` },
-    duplicate: { cls: 'dup', ic: '⚠', t: 'تم استخدام الكود', s: `${data.name} · دخل ${fmt(data.at)}` },
-    invalid:   { cls: 'bad', ic: '❌', t: 'كود غير مسجل', s: 'هذا الكود غير موجود في هذه المناسبة' },
-    closed:    { cls: 'bad', ic: '⛔', t: 'المناسبة مغلقة', s: 'انتهت مهلة هذه المناسبة' },
-    no_access: { cls: 'bad', ic: '⛔', t: 'المسح غير مفعّل', s: 'هذه الباقة لا تشمل المسح' }
-  }[data.result];
-  box.className = map.cls; box.style.display = 'block';
-  box.innerHTML = `<div class="ic">${map.ic}</div><h2>${map.t}</h2><div>${esc(map.s)}</div>`;
+  const { data, error } = await sb.rpc('scan_code', { p_code: code });
+  box.style.display = 'block';
+  if (error) { box.className = 'bad'; box.innerHTML = `<div class="ic">⚠</div><h2>تعذّر المسح</h2><div>${esc(error.message)}</div>`; return; }
+  const m = SCAN_MAP[data.result];
+  const sub = data.result === 'ok' ? `${esc(data.name)} · ${CATS[data.category]?.[0] || ''}${data.seats > 1 ? ` · دخل ${data.used} من ${data.seats}` : ''}`
+    : data.result === 'duplicate' ? `${esc(data.name)} · دخل ${fmt(data.at)}`
+    : data.result === 'invalid' ? 'هذا الكود غير موجود في هذه المناسبة'
+    : data.result === 'closed' ? 'انتهت مهلة هذه المناسبة' : 'هذه الباقة لا تشمل المسح';
+  box.className = m.cls;
+  box.innerHTML = `<div class="ic">${m.ic}</div><h2>${m.t}</h2><div>${sub}</div>`;
   if (navigator.vibrate) navigator.vibrate(data.result === 'ok' ? 80 : [120, 60, 120]);
 }
 
 /* ====== الإحصائيات ====== */
 async function vStats() {
-  let G = []; try { G = await loadGuests(); } catch (e) { return $('#view').innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+  const v = $('#view');
+  let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
   const inside = G.reduce((a, g) => a + g.used_count, 0), expected = G.reduce((a, g) => a + g.seats, 0);
-  $('#view').innerHTML = `
-  <div class="grid">${stat(inside + '/' + expected, 'الأشخاص الداخلون')}${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}${stat(G.filter(g => !g.used_count).length, 'لم يحضروا')}</div>
-  <div class="card mu">تتحدث الأرقام عند فتح هذه الشاشة. لتحديثها اضغط التبويب مرة أخرى.</div>`;
+  v.innerHTML = `
+  <div class="grid">
+    ${stat(inside + '/' + expected, 'الأشخاص الداخلون')}
+    ${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}
+    ${stat(G.filter(g => !g.used_count).length, 'لم يحضروا')}
+  </div>
+  <div class="card mu">للتحديث اضغط التبويب مرة أخرى.</div>`;
 }
 
 boot();
