@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>عبور | حفلتك</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{color-scheme:light;--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ac:#c9a24b;--ok:#15803d;--okb:#dcfce7;--wn:#c2410c;--wnb:#ffedd5;--er:#b91c1c;--erb:#fee2e2}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Tajawal,system-ui,sans-serif;font-size:15px;line-height:1.5}
+body{min-height:100vh;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{position:sticky;top:0;z-index:10;background:var(--pr);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
+header .t{flex:1;min-width:0}
+header b{font-size:20px;font-weight:800;display:block}
+header small{opacity:.8;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .out{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+main{max-width:720px;margin:0 auto;padding:14px}
+.tabs{position:sticky;top:64px;z-index:9;display:flex;gap:6px;background:var(--bg);padding:8px 0;overflow-x:auto}
+.tabs button{flex:1;white-space:nowrap;border:1px solid var(--bd);background:#fff;color:var(--mu);font:inherit;font-weight:700;padding:9px 12px;border-radius:10px;cursor:pointer}
+.tabs button.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h2{margin:0 0 10px;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:24px;font-weight:800;color:var(--pr)}.stat span{color:var(--mu);font-size:13px}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+label{font-size:12px;color:var(--mu);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx)}
+.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer}
+.btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-size:13px}
+.btn.d{background:var(--er)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-wrap:wrap}
+.row:first-of-type{border-top:0}.grow{flex:1;min-width:150px}
+.tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;display:inline-block}
+.t-ok{background:var(--okb);color:var(--ok)}.t-er{background:var(--erb);color:var(--er)}.t-wn{background:var(--wnb);color:var(--wn)}.t-mu{background:var(--bg);color:var(--mu)}
+.mu{color:var(--mu);font-size:13px}
+code{font-family:ui-monospace,monospace;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block}
+.msg{padding:10px;border-radius:12px;margin-top:10px;font-size:14px}
+.msg.ok{background:var(--okb);color:var(--ok)}.msg.err{background:var(--erb);color:var(--er)}
+#reader{width:100%;max-width:360px;margin:0 auto;border-radius:14px;overflow:hidden}
+#res{margin-top:12px;border-radius:16px;padding:20px 14px;text-align:center;display:none}
+#res .ic{font-size:50px;line-height:1}#res h2{font-size:22px;margin:6px 0}
+#res.ok{background:var(--okb);color:var(--ok)}#res.dup{background:var(--wnb);color:var(--wn)}#res.bad{background:var(--erb);color:var(--er)}
+.login{max-width:360px;margin:30px auto}
+@media(max-width:560px){.f{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:26px">🎟</span>
+  <div class="t"><b id="hname">عبور</b><small id="today"></small></div>
+  <button class="out" id="outBtn" style="display:none" onclick="logout()">خروج</button>
+</header>
+<main id="app"></main>
+
+<script>
+/* ====== الإعدادات ====== */
+const SUPA_URL = 'https://rkqgzmnmuyoaypuiihni.supabase.co';
+const SUPA_KEY = 'sb_publishable_vJSc2jJflbqcd_pe3LCMAQ_yQ2S7Ffg';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CAT = { vip:'VIP', media:'إعلام', fam:'عائلة', guest:'ضيف', org:'منظم', spk:'متحدث', exh:'عارض', cand:'متقدم' };
+const TOKEN = () => location.hash.replace('#', '').trim();
+let S = { ev: null, role: null, me: null, tab: 'guests', scanner: null };
+
+function notice(sel, text, ok) { const el = $(sel); if (el) { el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; } }
+const stat = (a, b) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`;
+function updateToday() {
+  $('#today').textContent = new Date().toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    + ' · ' + new Date().toLocaleDateString('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }) + ' هـ';
+}
+updateToday();
+
+/* ====== الحالة الأولى: فتح الرابط ====== */
+async function boot() {
+  const token = TOKEN();
+  if (!token) return message('الرابط غير مكتمل', 'افتح الرابط الذي أرسلته لك إدارة عبور.');
+
+  const { data: link, error } = await sb.rpc('resolve_link', { p_token: token });
+  if (error) return message('تعذّر فتح الرابط', 'تأكد من الاتصال وحاول مرة أخرى.');
+
+  if (link.state === 'invalid') return message('الرابط غير صالح', 'تأكد من نسخ الرابط كاملًا.');
+  if (link.state === 'suspended') return message('الحساب موقوف', 'تواصل مع الإدارة.');
+  if (link.state === 'not_yet') return message('الرابط لم يُفتح بعد', 'سيفتح في ' + fmt(link.opens_at));
+  if (link.state === 'closed') return message('انتهت المهلة', 'أُغلق هذا الرابط بعد ' + fmt(link.closes_at) + '. تواصل مع الإدارة للتمديد.');
+
+  // الرابط مفتوح: نسجّل الفتح (إحصائيات الإدارة) ثم نعرض الدخول
+  sb.rpc('track_link', { p_token: token });
+  S.key = link.key; S.name = link.name;
+  $('#hname').textContent = link.name;
+
+  const { data: sess } = await sb.auth.getSession();
+  if (sess.session) return route();
+  loginView();
+}
+
+const fmt = d => d ? new Date(d).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+function message(title, sub) {
+  $('#app').innerHTML = `<div class="card login" style="text-align:center"><div style="font-size:40px">🔒</div><h2>${esc(title)}</h2><p class="mu">${esc(sub)}</p></div>`;
+}
+
+/* ====== الدخول ====== */
+function loginView() {
+  $('#outBtn').style.display = 'none';
+  $('#app').innerHTML = `
+  <div class="card login">
+    <h2>تسجيل الدخول</h2>
+    <label>اسم المستخدم</label><input id="u" style="direction:ltr;margin-bottom:8px" autocomplete="username">
+    <label>كلمة المرور</label><input id="p" type="password" style="direction:ltr;margin-bottom:12px" autocomplete="current-password">
+    <button class="btn" style="width:100%" onclick="login()">دخول</button>
+    <div id="lm"></div>
+  </div>`;
+}
+
+async function login() {
+  const u = $('#u').value.trim().toLowerCase(), p = $('#p').value;
+  if (!u || !p) return notice('#lm', 'اكتب اسم المستخدم وكلمة المرور', false);
+  // الإيميل الداخلي المحسوب: <username>.<key>@users.aboor.app
+  const email = `${u}.${S.key}@users.aboor.app`;
+  const { error } = await sb.auth.signInWithPassword({ email, password: p });
+  if (error) return notice('#lm', 'اسم المستخدم أو كلمة المرور غير صحيحة', false);
+  route();
+}
+
+async function logout() {
+  if (S.scanner) { try { await S.scanner.stop(); } catch (e) {} S.scanner = null; }
+  await sb.auth.signOut();
+  location.reload();
+}
+
+/* ====== التوجيه حسب الدور ====== */
+async function route() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return loginView();
+  const { data: m, error } = await sb.from('event_users')
+    .select('role,event_id,display_name,username,active').eq('auth_user_id', user.id).limit(1);
+  if (error || !m || !m.length || !m[0].active) {
+    await sb.auth.signOut();
+    return notice('#lm', 'لا تملك صلاحية لهذه المناسبة', false);
+  }
+  S.me = m[0]; S.role = m[0].role;
+  const { data: ev } = await sb.from('events').select('*').eq('id', S.me.event_id).single();
+  S.ev = ev;
+  if (!ev.pkg_codes && S.role === 'reception') return message('الاستقبال غير مفعّل', 'تواصل مع الإدارة.');
+  if (S.role === 'reception') { S.tab = 'scan'; $('#hname').textContent = ev.name; $('#outBtn').style.display = 'inline-block'; return render(); }
+  S.tab = 'guests';
+  $('#hname').textContent = ev.name; $('#outBtn').style.display = 'inline-block';
+  render();
+}
+
+/* ====== الواجهة الرئيسية ====== */
+function render() {
+  const tabs = S.role === 'reception'
+    ? [['scan', '📷 المسح']]
+    : [['guests', '👥 المدعوون'], ...(S.ev.pkg_codes ? [['staff', '🛂 الاستقبال'], ['scan', '📷 المسح']] : []), ['stats', '📊 الإحصائيات']];
+  $('#app').innerHTML = `<div class="tabs">${tabs.map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" onclick="setTab('${t[0]}')">${t[1]}</button>`).join('')}</div><div id="view"></div>`;
+  paint();
+}
+
+async function setTab(t) {
+  if (S.scanner && t !== 'scan') { try { await S.scanner.stop(); } catch (e) {} S.scanner = null; }
+  S.tab = t; render();
+}
+
+function paint() {
+  ({ guests: vGuests, staff: vStaff, scan: vScan, stats: vStats })[S.tab]();
+}
+
+/* ====== المدعوون ====== */
+async function loadGuests() {
+  const { data, error } = await sb.from('guests').select('id,name,phone,category,seats,used_count,code,first_entry_at').eq('event_id', S.ev.id).order('created_at');
+  if (error) throw error;
+  return data;
+}
+
+async function vGuests() {
+  const v = $('#view');
+  v.innerHTML = '<div class="card mu">جارٍ التحميل...</div>';
+  let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+  const limit = S.ev.guest_limit, left = limit - G.length;
+  v.innerHTML = `
+  <div class="grid">${stat(G.length + '/' + limit, 'المدعوون')}${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}${stat(left, 'متبقٍ')}</div>
+  <div class="card">
+    <h2>إضافة مدعو</h2>
+    <div class="f">
+      <div><label>الاسم</label><input id="gn"></div>
+      <div><label>الجوال (اختياري)</label><input id="gp" type="tel" style="direction:ltr" placeholder="9665xxxxxxxx"></div>
+      <div><label>عدد الأشخاص</label><input id="gs" type="number" min="1" value="1"></div>
+      <button class="btn" onclick="addGuest()">إضافة</button>
+    </div>
+    <details style="margin-top:10px"><summary class="mu">إضافة قائمة (اسم ورقم في كل سطر)</summary>
+      <textarea id="bulk" rows="5" style="margin-top:6px" placeholder="أحمد 966501234567"></textarea>
+      <button class="btn s" style="margin-top:6px" onclick="addBulk()">إضافة القائمة</button></details>
+    <div id="gm"></div>
+  </div>
+  <div class="card"><h2>القائمة</h2>${G.map(guestRow).join('') || '<p class="mu">لا يوجد مدعوون بعد.</p>'}</div>`;
+}
+
+function guestRow(g) {
+  const inn = g.used_count >= g.seats;
+  return `<div class="row"><div class="grow">
+      <b>${esc(g.name)}</b> <span class="mu">· ${CAT[g.category] || g.category}</span><br>
+      <span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone || 'بدون رقم')}${g.seats > 1 ? ' · ' + g.seats + ' أشخاص' : ''}</span></div>
+    <span class="tag ${g.used_count ? (inn ? 't-ok' : 't-wn') : 't-mu'}">${g.used_count ? `دخل ${g.used_count}/${g.seats}` : 'لم يحضر'}</span>
+    <code>${esc(g.code)}</code></div>`;
+}
+
+async function addGuest() {
+  const name = $('#gn').value.trim(); if (!name) return notice('#gm', 'اكتب الاسم', false);
+  const { error } = await sb.from('guests').insert({ event_id: S.ev.id, name, phone: $('#gp').value.replace(/\D/g, '') || null, seats: parseInt($('#gs').value) || 1 });
+  if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message, false);
+  vGuests();
+}
+
+async function addBulk() {
+  const lines = $('#bulk').value.split('\n').map(x => x.trim()).filter(Boolean);
+  const rows = lines.map(l => {
+    const m = l.match(/^(.*?)[\s,;]+(\+?[\d\s-]{8,})$/);
+    return { event_id: S.ev.id, name: m ? m[1].trim() : l, phone: m ? m[2].replace(/\D/g, '') : null, seats: 1 };
+  });
+  if (!rows.length) return notice('#gm', 'القائمة فارغة', false);
+  const { error } = await sb.from('guests').insert(rows);
+  if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message + ' (ربما تجاوزت الحد)', false);
+  vGuests();
+}
+
+/* ====== الاستقبال (حسابات الموظفين) ====== */
+async function vStaff() {
+  const v = $('#view');
+  const { data: st } = await sb.from('event_users').select('id,auth_user_id,username,display_name,scans_ok,active')
+    .eq('event_id', S.ev.id).eq('role', 'reception').order('created_at');
+  const L = st || [];
+  const can = L.length < S.ev.staff_limit;
+  v.innerHTML = `
+  <div class="card">
+    <h2>🛂 حسابات الاستقبال</h2>
+    <p class="mu">باقتك تشمل ${S.ev.staff_limit} حسابات، وأضفت ${L.length}. يدخل الموظف من نفس الرابط بالمستخدم وكلمة المرور، ويفتح له المسح فقط.</p>
+    ${can ? `<div class="f"><div><label>اسم الموظف</label><input id="sn"></div>
+      <div><label>اسم المستخدم</label><input id="su" style="direction:ltr"></div>
+      <div><label>كلمة المرور</label><input id="sp" style="direction:ltr" value="${Math.random().toString(36).slice(2, 8)}"></div>
+      <button class="btn" onclick="addStaff()">إضافة</button></div>` : '<span class="tag t-wn">وصلت للحد المسموح</span>'}
+    <div id="sm"></div>
+  </div>
+  <div class="card">${L.map(s => `<div class="row"><div class="grow"><b>${esc(s.display_name || s.username)}</b><br>
+      <span class="mu">المستخدم <code>${esc(s.username)}</code> · مسح ${s.scans_ok}</span></div>
+      <button class="btn s d" style="color:#fff" onclick="removeStaff('${s.auth_user_id}')">حذف</button></div>`).join('') || '<p class="mu">لا توجد حسابات استقبال بعد.</p>'}</div>`;
+}
+
+async function addStaff() {
+  const name = $('#sn').value.trim(), user = $('#su').value.trim().toLowerCase(), pass = $('#sp').value;
+  if (!name || !user) return notice('#sm', 'اكتب الاسم واسم المستخدم', false);
+  const { error } = await sb.rpc('owner_create_staff', { p_name: name, p_username: user, p_password: pass });
+  if (error) return notice('#sm', 'تعذّر الإضافة: ' + error.message, false);
+  notice('#sm', `تمت الإضافة. المستخدم: ${user} · كلمة المرور: ${pass}`, true);
+  setTimeout(vStaff, 2500);
+}
+
+async function removeStaff(uid) {
+  if (!confirm('حذف حساب هذا الموظف؟')) return;
+  const { error } = await sb.rpc('owner_remove_staff', { p_user: uid });
+  if (error) return alert('خطأ: ' + error.message);
+  vStaff();
+}
+
+/* ====== المسح ====== */
+function vScan() {
+  $('#view').innerHTML = `
+  <div class="card">
+    <div id="reader"></div>
+    <div style="text-align:center;margin:10px 0"><button class="btn" id="camBtn" onclick="toggleCam()">تشغيل الكاميرا</button></div>
+    <div class="f"><div><label>أو أدخل الكود يدويًا</label><input id="man" style="direction:ltr;text-transform:uppercase"></div>
+      <button class="btn g" style="background:var(--ac);color:#1b2430" onclick="check($('#man').value)">تحقق</button></div>
+    <div id="res"></div>
+  </div>`;
+}
+
+async function toggleCam() {
+  if (S.scanner) { try { await S.scanner.stop(); } catch (e) {} S.scanner = null; $('#camBtn').textContent = 'تشغيل الكاميرا'; return; }
+  try {
+    S.scanner = new Html5Qrcode('reader');
+    let last = '', t = 0;
+    await S.scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, c => {
+      const n = Date.now(); if (c === last && n - t < 3000) return; last = c; t = n; check(c);
+    });
+    $('#camBtn').textContent = 'إيقاف الكاميرا';
+  } catch (e) { S.scanner = null; alert('تعذّر تشغيل الكاميرا. امنح الإذن أو استخدم الإدخال اليدوي.'); }
+}
+
+async function check(raw) {
+  const code = String(raw || '').trim().toUpperCase(); if (!code) return;
+  const { data, error } = await sb.rpc('scan_code', { p_code: code });
+  const box = $('#res');
+  if (error) { box.className = 'bad'; box.style.display = 'block'; box.innerHTML = `<div class="ic">⚠</div><h2>تعذّر المسح</h2><div>${esc(error.message)}</div>`; return; }
+  const map = {
+    ok:        { cls: 'ok',  ic: '✅', t: 'مسموح بالدخول', s: `${data.name} · ${CAT[data.category] || ''}${data.seats > 1 ? ` · دخل ${data.used} من ${data.seats}` : ''}` },
+    duplicate: { cls: 'dup', ic: '⚠', t: 'تم استخدام الكود', s: `${data.name} · دخل ${fmt(data.at)}` },
+    invalid:   { cls: 'bad', ic: '❌', t: 'كود غير مسجل', s: 'هذا الكود غير موجود في هذه المناسبة' },
+    closed:    { cls: 'bad', ic: '⛔', t: 'المناسبة مغلقة', s: 'انتهت مهلة هذه المناسبة' },
+    no_access: { cls: 'bad', ic: '⛔', t: 'المسح غير مفعّل', s: 'هذه الباقة لا تشمل المسح' }
+  }[data.result];
+  box.className = map.cls; box.style.display = 'block';
+  box.innerHTML = `<div class="ic">${map.ic}</div><h2>${map.t}</h2><div>${esc(map.s)}</div>`;
+  if (navigator.vibrate) navigator.vibrate(data.result === 'ok' ? 80 : [120, 60, 120]);
+}
+
+/* ====== الإحصائيات ====== */
+async function vStats() {
+  let G = []; try { G = await loadGuests(); } catch (e) { return $('#view').innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+  const inside = G.reduce((a, g) => a + g.used_count, 0), expected = G.reduce((a, g) => a + g.seats, 0);
+  $('#view').innerHTML = `
+  <div class="grid">${stat(inside + '/' + expected, 'الأشخاص الداخلون')}${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}${stat(G.filter(g => !g.used_count).length, 'لم يحضروا')}</div>
+  <div class="card mu">تتحدث الأرقام عند فتح هذه الشاشة. لتحديثها اضغط التبويب مرة أخرى.</div>`;
+}
+
+boot();
+</script>
+</body>
+</html>
