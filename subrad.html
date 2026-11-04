@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عبور | الإدارة</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ok:#15803d;--er:#b91c1c;--okb:#dcfce7;--erb:#fee2e2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px}
+header{background:var(--pr);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+header b{font-size:20px}
+main{max-width:720px;margin:0 auto;padding:14px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h2{margin:0 0 10px;font-size:18px}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+input{width:100%;font:inherit;padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff}
+.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer;margin-top:12px}
+.btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-size:13px;margin:0}
+.btn:disabled{opacity:.5}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-wrap:wrap}
+.row:first-child{border-top:0}
+.grow{flex:1;min-width:150px}
+.mu{color:var(--mu);font-size:13px}
+code{direction:ltr;display:inline-block;background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
+.msg{padding:10px;border-radius:10px;margin-top:10px;font-size:14px}
+.ok{background:var(--okb);color:var(--ok)}
+.err{background:var(--erb);color:var(--er)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:520px){.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><b>عبور · الإدارة</b><button class="btn s" id="out" style="display:none" onclick="logout()">خروج</button></header>
+<main id="app"></main>
+
+<script>
+/* ====== الإعدادات ====== */
+const SUPA_URL = 'https://rkqgzmnmuyoaypuiihni.supabase.co';
+const SUPA_KEY = 'sb_publishable_vJSc2jJflbqcd_pe3LCMAQ_yQ2S7Ffg';
+// رابط صفحة العميل بعد رفعها (بدّله بعد النشر)
+const APP_URL  = 'https://YOUR-APP-SITE.netlify.app/app.html';
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso = v => v ? new Date(v).toISOString() : null;
+const nul = v => (v === '' || v == null) ? null : v;
+const baseLink = () => APP_URL.replace(/#.*$/, '');
+
+function notice(id, text, ok) {
+  const el = $(id); if (!el) return;
+  el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text;
+}
+
+/* ====== الدخول ====== */
+function loginView(msg = '') {
+  $('#out').style.display = 'none';
+  $('#app').innerHTML = `
+  <div class="card" style="max-width:360px;margin:40px auto">
+    <h2>تسجيل دخول الإدارة</h2>
+    <label>الإيميل</label><input id="em" type="email" style="direction:ltr">
+    <label>كلمة المرور</label><input id="pw" type="password" style="direction:ltr">
+    <button class="btn" style="width:100%" onclick="login()">دخول</button>
+    <div id="lm"></div>
+  </div>`;
+  if (msg) notice('#lm', msg, false);
+}
+
+async function login() {
+  const email = $('#em').value.trim(), password = $('#pw').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return notice('#lm', 'الإيميل أو كلمة المرور غير صحيحة', false);
+  const { data: isAdmin } = await sb.rpc('is_admin');
+  if (!isAdmin) { await sb.auth.signOut(); return notice('#lm', 'هذا الحساب ليس سوبر أدمن', false); }
+  dashboard();
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  loginView();
+}
+
+/* ====== لوحة الإدارة ====== */
+function dashboard() {
+  $('#out').style.display = 'inline-block';
+  $('#app').innerHTML = `
+  <div class="card">
+    <h2>➕ حساب عميل جديد</h2>
+    <div class="g2">
+      <div><label>اسم المناسبة</label><input id="n"></div>
+      <div><label>اسم العميل</label><input id="c"></div>
+      <div><label>من تاريخ</label><input id="sd" type="date"></div>
+      <div><label>إلى تاريخ</label><input id="ed" type="date"></div>
+      <div><label>الحد الأقصى للمدعوين</label><input id="gl" type="number" value="100"></div>
+      <div><label>عدد حسابات الاستقبال (0 إلى 3)</label><input id="sl" type="number" min="0" max="3" value="1"></div>
+      <div><label>يفتح الرابط في</label><input id="ko" type="datetime-local"></div>
+      <div><label>يقفل الرابط في</label><input id="kc" type="datetime-local"></div>
+      <div><label>اسم مستخدم العميل (إنجليزي وأرقام)</label><input id="un" style="direction:ltr"></div>
+      <div><label>كلمة مرور العميل</label><input id="up" style="direction:ltr" value="${Math.random().toString(36).slice(2,8)}"></div>
+    </div>
+    <label>الباقات</label>
+    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pc" type="checkbox" style="width:auto" checked> الأكواد والاستقبال</label>
+    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pm" type="checkbox" style="width:auto"> الرسائل</label>
+    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pb" type="checkbox" style="width:auto"> البطاقات</label>
+    <button class="btn" id="create" onclick="createClient()">إنشاء الحساب وتوليد الرابط</button>
+    <div id="cm"></div>
+  </div>
+  <div class="card"><h2>المناسبات</h2><div id="list" class="mu">جارٍ التحميل...</div></div>`;
+  loadEvents();
+}
+
+async function createClient() {
+  const btn = $('#create'); btn.disabled = true;
+  const payload = {
+    p_name: $('#n').value.trim(),
+    p_client: $('#c').value.trim(),
+    p_starts: nul($('#sd').value),
+    p_ends: nul($('#ed').value),
+    p_guest_limit: parseInt($('#gl').value) || 100,
+    p_staff_limit: parseInt($('#sl').value) || 0,
+    p_codes: $('#pc').checked,
+    p_msgs: $('#pm').checked,
+    p_cards: $('#pb').checked,
+    p_opens: iso($('#ko').value),
+    p_closes: iso($('#kc').value),
+    p_username: $('#un').value.trim().toLowerCase(),
+    p_password: $('#up').value
+  };
+  if (!payload.p_name) { btn.disabled = false; return notice('#cm', 'اكتب اسم المناسبة', false); }
+
+  const { data, error } = await sb.rpc('admin_create_client', payload);
+  btn.disabled = false;
+  if (error) return notice('#cm', 'تعذّر الإنشاء: ' + error.message, false);
+
+  const link = baseLink() + '#' + data.token;
+  const text = `حيّاك الله،\nرابط حفلتك: ${link}\nاسم المستخدم: ${payload.p_username}\nكلمة المرور: ${payload.p_password}\nيعمل الرابط من ${$('#ko').value || 'الآن'} حتى ${$('#kc').value || 'نهاية المناسبة'}`;
+  $('#cm').innerHTML = `<div class="msg ok">تم إنشاء الحساب.</div>
+    <label>نص الرسالة للعميل</label><code style="white-space:pre-wrap;display:block">${esc(text)}</code>
+    <button class="btn s" onclick="copyText(this.dataset.t)" data-t="${esc(text)}">نسخ الرسالة</button>`;
+  loadEvents();
+}
+
+async function loadEvents() {
+  const { data, error } = await sb.from('events')
+    .select('id,name,client_name,link_token,opens_at,closes_at,suspended,pkg_codes,pkg_msgs,pkg_cards,staff_limit')
+    .order('created_at', { ascending: false });
+  if (error) return $('#list').textContent = 'خطأ: ' + error.message;
+  if (!data.length) return $('#list').textContent = 'لا توجد مناسبات بعد.';
+  $('#list').innerHTML = data.map(e => {
+    const link = baseLink() + '#' + e.link_token;
+    const pk = [e.pkg_codes && 'أكواد', e.pkg_msgs && 'رسائل', e.pkg_cards && 'بطاقات'].filter(Boolean).join(' · ');
+    return `<div class="row">
+      <div class="grow"><b>${esc(e.name)}</b> <span class="mu">· ${esc(e.client_name)}</span><br>
+        <span class="mu">${pk || 'بدون باقات'} · الاستقبال ${e.staff_limit}</span><br>
+        <span class="mu">الرابط:</span> <code>${esc(link)}</code></div>
+      <button class="btn s" data-t="${esc(link)}" onclick="copyText(this.dataset.t)">نسخ الرابط</button>
+      <button class="btn s" onclick="regen('${e.id}')">رابط جديد</button>
+    </div>`;
+  }).join('');
+}
+
+function copyText(t) { navigator.clipboard.writeText(t).then(() => alert('تم النسخ')); }
+
+async function regen(id) {
+  if (!confirm('سيُلغى الرابط القديم. متابعة؟')) return;
+  const { error } = await sb.rpc('admin_regen_link', { p_event: id });
+  if (error) return alert('خطأ: ' + error.message);
+  loadEvents();
+}
+
+/* ====== البداية ====== */
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    const { data: isAdmin } = await sb.rpc('is_admin');
+    if (isAdmin) return dashboard();
+    await sb.auth.signOut();
+  }
+  loginView();
+})();
+</script>
+</body>
+</html>
