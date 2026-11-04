@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{color-scheme:light;--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ac:#c9a24b;--ok:#15803d;--okb:#dcfce7;--wn:#c2410c;--wnb:#ffedd5;--er:#b91c1c;--erb:#fee2e2}
 *{box-sizing:border-box}
@@ -408,6 +409,43 @@ async function loadInvite() {
   S.custom = { src: data.signedUrl, w: b.w, h: b.h, x: b.x ?? .35, y: b.y ?? .7, s: b.s ?? .22, wb: b.wb ?? true, ratio: b.ratio ?? (b.h / b.w) };
 }
 
+/* ====== تركيب دعوة كل مدعو حسب التصميم المختار ====== */
+function currentMode() {
+  return S.ev.invite_mode || (S.custom ? 'mine' : 'aboor');
+}
+
+// تصميم من البطاقات: يُرسم بنفس شكله مع باركود المدعو، ويتحول إلى صورة
+async function composeTemplate(g, idx) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:90mm;height:130mm;background:#fff';
+  wrap.innerHTML = badgeHTML(g, idx);
+  document.body.appendChild(wrap);
+  try {
+    fillQR(wrap);
+    await new Promise(r => setTimeout(r, 150));
+    const cv = await html2canvas(wrap.firstElementChild, { scale: 3, backgroundColor: null, useCORS: true });
+    return await new Promise(r => cv.toBlob(r, 'image/png'));
+  } finally {
+    wrap.remove();
+  }
+}
+
+// يختار طريقة التركيب حسب اختيار صاحب الحفلة
+function composeFor(g) {
+  const mode = currentMode();
+  if (mode === 'mine' && S.custom) return composeInvite(g);
+  if (mode === 'template') return composeTemplate(g, S.ev.invite_tpl ?? 0);
+  return composeTemplate(g, TP.length - 1);
+}
+
+async function saveDesign() {
+  const mode = $('#dm').value, tpl = parseInt($('#dt').value) || 0;
+  const { error } = await sb.from('events').update({ invite_mode: mode, invite_tpl: tpl }).eq('id', S.ev.id);
+  if (error) return notice('#mm', 'تعذّر حفظ التصميم: ' + error.message, false);
+  S.ev.invite_mode = mode; S.ev.invite_tpl = tpl;
+  vMsgs();
+}
+
 /* ====== الرسائل ====== */
 function spin(t, g) {
   let h = 7; for (const c of g.id) h = (h * 31 + c.charCodeAt(0)) | 0;
@@ -438,10 +476,20 @@ async function vMsgs() {
   </div>
   <div class="card"><h2>معاينة</h2><div class="bubble">${esc(withPhone[0] ? msgText(withPhone[0]) : 'أضف مدعوًا برقم جوال لترى المعاينة.')}</div></div>
   <div class="card">
-    <h2>الإرسال</h2>
+    <h2>تصميم الدعوة</h2>
+    <p class="mu">يُرسل التصميم المختار لكل المدعوين، ويُضاف باركود كل واحد فوقه تلقائيًا.</p>
+    <label>التصميم</label>
+    <select id="dm" onchange="saveDesign()">
+      <option value="mine" ${currentMode() === 'mine' ? 'selected' : ''} ${S.custom ? '' : 'disabled'}>صورتي التي رفعتها</option>
+      <option value="template" ${currentMode() === 'template' ? 'selected' : ''}>أحد تصاميم البطاقات</option>
+      <option value="aboor" ${currentMode() === 'aboor' ? 'selected' : ''}>تصميم عبور الثابت</option>
+    </select>
+    <div style="margin-top:6px"><label>اختر البطاقة (إذا اخترت تصميم البطاقات)</label>
+      <select id="dt" onchange="saveDesign()">${TP.slice(0, 20).map((t, i) => `<option value="${i}" ${(S.ev.invite_tpl ?? 0) === i ? 'selected' : ''}>${i + 1}. ${t[0]}</option>`).join('')}</select></div>
+    <h2 style="margin-top:14px">الإرسال</h2>
     <div class="grid">${stat(withPhone.length, 'لديهم أرقام')}${stat(withPhone.length - pending.length, 'تم فتحها')}${stat(pending.length, 'متبقية')}</div>
     <button class="btn g" ${pending.length ? '' : 'disabled'} onclick="sendOne('${pending[0]?.id || ''}')">إرسال التالي${pending[0] ? ': ' + esc(pending[0].name) : ''}</button>
-    ${S.custom && pending.length ? ` <button class="btn s" onclick="shareWithImage('${pending[0].id}')">إرسال الدعوة مع الباركود</button>` : ''}
+
     <p class="mu">كل ضغطة تفتح واتساب برسالة المدعو جاهزة، وتضغط إرسال بنفسك. هذا آمن ويقلل خطر الحظر. الإرسال الآلي الكامل يحتاج خدمة على السيرفر، وسنضيفها لاحقًا.</p>
   </div>
   <div class="card">${withPhone.map(g => `<div class="row"><div class="grow"><b>${esc(g.name)}</b><br><span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone)}</span></div>
@@ -473,6 +521,7 @@ async function composeInvite(g) {
 }
 
 async function sendOne(id) {
+  if (id) return shareWithImage(id);
   const g = S.guests.find(x => x.id === id);
   if (!g || !g.phone) return;
   window.open(`https://wa.me/${g.phone}?text=${encodeURIComponent(msgText(g))}`, '_blank');
@@ -482,9 +531,9 @@ async function sendOne(id) {
 
 async function shareWithImage(id) {
   const g = S.guests.find(x => x.id === id);
-  if (!g || !S.custom) return;
+  if (!g) return;
   try {
-    const blob = await composeInvite(g);
+    const blob = await composeFor(g);
     const file = new File([blob], `invite-${g.code}.jpg`, { type: 'image/jpeg' });
     if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
       const a = document.createElement('a');
@@ -521,7 +570,8 @@ const TP = [
  ['ألعاب إلكترونية','ESPORTS ARENA',4,'cut','r','linear-gradient(115deg,#ff00aa33,#0000 40%),linear-gradient(#ffffff0d 1px,#0000 1px) 0 0/4mm 4mm,#0a0a14','#fff','#00f0ff'],
  ['تذكرة يوم واحد','DAY PASS',4,'tab','r','repeating-linear-gradient(90deg,#ffffff14 0 2mm,#0000 2mm 4mm),linear-gradient(120deg,#0f766e,#14b8a6)','#fff','#fef3c7'],
  ['بسيط أنيق','MINIMAL PASS',3,'r','r','#f5f5f4','#111','#111'],
- ['تراث وصحراء','MAJLIS HERITAGE',1,'cut','r','repeating-conic-gradient(#c2410c18 0 25%,#0000 0 50%) 0 0/8mm 8mm,#f6ead2','#4a2511','#c2410c']
+ ['تراث وصحراء','MAJLIS HERITAGE',1,'cut','r','repeating-conic-gradient(#c2410c18 0 25%,#0000 0 50%) 0 0/8mm 8mm,#f6ead2','#4a2511','#c2410c'],
+ ['عبور · تصميم ثابت','ABOOR INVITATION',3,'r','r','linear-gradient(160deg,#0f3d3e,#06201f)','#fff','#c9a24b']
 ];
 const TM = '-webkit-mask:radial-gradient(circle at 0 50%,#0000 4mm,#000 4.2mm) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,#0000 4mm,#000 4.2mm) right/51% 100% no-repeat;mask:radial-gradient(circle at 0 50%,#0000 4mm,#000 4.2mm) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,#0000 4mm,#000 4.2mm) right/51% 100% no-repeat';
 const SH = {
@@ -542,7 +592,7 @@ function badgeHTML(g, i) {
   const vl = k === 'o' ? '<div class="vl"><b>SINGLE ENTRY</b><small>VOID AFTER FIRST SCAN</small></div>'
            : k === 's' ? `<div class="vl"><b>STAFF · ALL ACCESS</b><small>${dr}</small></div>`
            : `<div class="vl"><b>VALID</b><small>${dr}</small></div>`;
-  const hd = `<div class="hd">${lg}<div><small>${TP[i][1]}</small><h4>${esc(S.ev.name)}</h4></div></div>`;
+  const hd = `<div class="hd">${lg}<div><small>${TP[i][1]}</small><h4>${esc(i === TP.length - 1 ? 'عبور' : S.ev.name)}</h4></div></div>`;
   const ct = `<div class="ct">${c[2]}</div>`, nm = `<div class="nm">${esc(g.name)}</div>`;
   const q = `<div class="qr"><div class="q" data-c="${esc(g.code)}"></div></div>`;
   const ft = `<div class="ft">POWERED BY ABOOR · ${esc(g.code)}</div>`;
