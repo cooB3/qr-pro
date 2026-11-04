@@ -233,6 +233,7 @@ async function route() {
   S.ev = ev;
   $('#hname').textContent = ev.name;
   $('#outBtn').style.display = 'inline-block';
+  await loadInvite();
   if (S.role === 'reception') {
     if (!ev.pkg_codes) return message('المسح غير مفعّل', 'تواصل مع الإدارة.');
     S.tab = 'scan';
@@ -384,6 +385,29 @@ function showQR(id) {
   });
 }
 
+/* ====== حفظ الدعوة على السيرفر ====== */
+async function saveInvite() {
+  if (!S.custom) return alert('ارفع صورة الدعوة أولًا');
+  const cu = S.custom;
+  const blob = await (await fetch(cu.src)).blob();
+  const path = `${S.ev.id}/invite.jpg`;
+  const { error: e1 } = await sb.storage.from('invites').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (e1) return alert('تعذّر رفع الصورة: ' + e1.message);
+  const box = { x: cu.x, y: cu.y, s: cu.s, wb: cu.wb, ratio: cu.ratio, w: cu.w, h: cu.h };
+  const { error: e2 } = await sb.from('events').update({ invite_path: path, invite_box: box }).eq('id', S.ev.id);
+  if (e2) return alert('تعذّر الحفظ: ' + e2.message);
+  S.ev.invite_path = path; S.ev.invite_box = box;
+  alert('تم حفظ الدعوة على السيرفر، وستُستخدم في الإرسال الآلي.');
+}
+
+async function loadInvite() {
+  if (!S.ev.invite_path || S.custom) return;
+  const { data, error } = await sb.storage.from('invites').createSignedUrl(S.ev.invite_path, 3600);
+  if (error || !data) return;
+  const b = S.ev.invite_box || {};
+  S.custom = { src: data.signedUrl, w: b.w, h: b.h, x: b.x ?? .35, y: b.y ?? .7, s: b.s ?? .22, wb: b.wb ?? true, ratio: b.ratio ?? (b.h / b.w) };
+}
+
 /* ====== الرسائل ====== */
 function spin(t, g) {
   let h = 7; for (const c of g.id) h = (h * 31 + c.charCodeAt(0)) | 0;
@@ -391,7 +415,8 @@ function spin(t, g) {
 }
 function msgText(g) {
   return spin(S.ev.msg_template || DEF_MSG, g)
-    .replace(/\{name\}/g, g.name).replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
+    .replace(/\{name\}/g, g.name).replace(/\{first\}/g, (g.name || '').split(' ')[0])
+    .replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
 }
 
 async function vMsgs() {
@@ -404,12 +429,12 @@ async function vMsgs() {
   <div class="card">
     <h2>💬 نص الدعوة</h2>
     <textarea id="mt" rows="5">${esc(tpl)}</textarea>
-    <p class="mu">المتغيرات: {name} الاسم، {event} المناسبة، {code} الكود. ولتنويع النص اكتب الصيغ بين أقواس هكذا: {مرحبا|هلا|حيّاك الله}، فيختار النظام صيغة مختلفة لكل مدعو.</p>
+    <p class="mu">المتغيرات: {name} الاسم الكامل، {first} الاسم الأول، {event} المناسبة، {code} الكود. ولتنويع النص اكتب الصيغ بين أقواس هكذا: {مرحبا|هلا|حيّاك الله}، فيختار النظام صيغة مختلفة لكل مدعو.</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s" onclick="saveMsgTpl()">حفظ النص</button></div>
     <div id="mm"></div>
     <label style="margin-top:12px">صورة الدعوة (يُضاف عليها باركود كل مدعو تلقائيًا)</label>
     <input type="file" accept="image/*" onchange="uploadCustom(this)">
-    ${S.custom ? `<div style="position:relative;max-width:260px;margin-top:8px"><img src="${S.custom.src}" style="width:100%;display:block;border-radius:10px"><div style="position:absolute;left:${S.custom.x * 100}%;top:${S.custom.y * 100}%;width:${S.custom.s * 100}%;aspect-ratio:1;background:#fff;opacity:.9"></div></div><p class="mu">مكان الباركود يمكن تعديله من تبويب البطاقات ← دعوتك الخاصة.</p>` : ''}
+    ${S.custom ? `<div style="position:relative;max-width:260px;margin-top:8px"><img src="${S.custom.src}" style="width:100%;display:block;border-radius:10px"><div style="position:absolute;left:${S.custom.x * 100}%;top:${S.custom.y * 100}%;width:${S.custom.s * 100}%;aspect-ratio:1;background:#fff;opacity:.9"></div></div><div style="margin-top:6px"><button class="btn g" onclick="saveInvite()">حفظ الدعوة على السيرفر</button></div><p class="mu">مكان الباركود يمكن تعديله من تبويب البطاقات ← دعوتك الخاصة.</p>` : ''}
   </div>
   <div class="card"><h2>معاينة</h2><div class="bubble">${esc(withPhone[0] ? msgText(withPhone[0]) : 'أضف مدعوًا برقم جوال لترى المعاينة.')}</div></div>
   <div class="card">
