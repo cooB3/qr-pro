@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0f3d3e">
 <title>عبور | حفلتك</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
@@ -63,6 +64,14 @@ code{font-family:ui-monospace,monospace;background:var(--bg);padding:2px 6px;bor
 .gw .pb{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
 .badges{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
 
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.chip{border:1px solid var(--bd);background:#fff;color:var(--mu);font:inherit;font-size:13px;font-weight:700;padding:6px 14px;border-radius:99px;cursor:pointer}
+.chip.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.bar{height:12px;background:var(--bd);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pr),var(--ac));border-radius:99px;transition:width .6s}
+.ico{border:0;background:transparent;cursor:pointer;font-size:16px;padding:6px 8px;border-radius:8px}
+.ico:hover{background:var(--erb)}
+button:focus-visible,.chip:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 /* بطاقات */
 .pb{position:relative;width:90mm;height:130mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:9mm 6mm 5mm;color:var(--fg);text-align:center;font-family:Outfit,Tajawal,sans-serif;overflow:hidden;break-inside:avoid;page-break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:inset 0 0 0 .3mm #8884;background-size:auto}
 .pb.l4{flex-direction:row;padding:5mm 0 5mm 8mm;justify-content:flex-start;gap:4mm}
@@ -135,7 +144,7 @@ const CATS = {
   exh:['عارض','#0891b2','EXHIBITOR'], cand:['متقدم','#059669','CANDIDATE']
 };
 const DEF_MSG = 'حيّاك الله {name} 🌹\n{مرحبا|هلا والله|حيّاك الله}، يسعدنا حضورك {event}.\nكود دخولك: {code}\nنراك على خير!';
-const S = { ev: null, role: null, tab: 'guests', scanner: null, key: null, guests: [], img: null, custom: null, sent: {} };
+const S = { ev: null, role: null, tab: 'guests', scanner: null, key: null, guests: [], img: null, custom: null, sent: {}, q: '', f: 'all', tm: null, ht: null, ac: null };
 
 function notice(sel, text, ok) { const el = $(sel); if (el) { el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; } }
 function updateToday() {
@@ -191,7 +200,7 @@ function loginView() {
   <div class="card login">
     <h2>تسجيل الدخول</h2>
     <label>اسم المستخدم</label><input id="u" style="direction:ltr;margin-bottom:10px" autocomplete="username">
-    <label>كلمة المرور</label><input id="p" type="password" style="direction:ltr;margin-bottom:16px" autocomplete="current-password">
+    <label>كلمة المرور</label><input id="p" type="password" style="direction:ltr;margin-bottom:16px" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
     <button class="btn" style="width:100%" onclick="login()">دخول</button>
     <div id="lm"></div>
   </div>`;
@@ -250,6 +259,7 @@ function render() {
 }
 
 async function setTab(t) {
+  clearInterval(S.tm);
   if (S.scanner && t !== 'scan') { try { await S.scanner.stop(); } catch (e) {} S.scanner = null; }
   S.tab = t; render();
 }
@@ -278,6 +288,7 @@ async function vGuests() {
       <div><label>الاسم</label><input id="gn"></div>
       <div><label>الجوال (يكفي 05 أو 5)</label><input id="gp" type="tel" style="direction:ltr" oninput="previewPhone(this.value)" placeholder="05xxxxxxxx"></div>
       <div><label>عدد الأشخاص</label><input id="gs" type="number" min="1" value="1"></div>
+      <div><label>التصنيف</label><select id="gc">${Object.entries(CATS).map(([k, c]) => `<option value="${k}" ${k === 'guest' ? 'selected' : ''}>${c[0]}</option>`).join('')}</select></div>
       <button class="btn" onclick="addGuest()">إضافة</button>
     </div>
     <div class="mu" id="pp" style="margin-top:6px"></div>
@@ -286,7 +297,43 @@ async function vGuests() {
       <button class="btn s" style="margin-top:8px" onclick="addBulk()">إضافة القائمة</button></details>
     <div id="gm"></div>
   </div>
-  <div class="card"><h2>قائمة المدعوين (${G.length})</h2>${G.map(guestRow).join('') || '<p class="mu">لا يوجد مدعوون بعد.</p>'}</div>`;
+  <div class="card"><h2>قائمة المدعوين (<span id="gcnt">${G.length}</span>)</h2>
+    <input id="sq" type="search" placeholder="ابحث بالاسم أو الرقم" value="${esc(S.q)}" oninput="S.q=this.value;drawList()">
+    <div class="chips">${[['all', 'الكل'], ['in', 'حضروا'], ['out', 'لم يحضروا']].map(x => `<button class="chip ${S.f === x[0] ? 'on' : ''}" data-f="${x[0]}" onclick="setF('${x[0]}')">${x[1]}</button>`).join('')}
+      <button class="chip" style="margin-inline-start:auto" onclick="exportCSV()">⬇ تصدير CSV</button></div>
+    <div id="gl"></div></div>`;
+  drawList();
+}
+
+function drawList() {
+  const q = S.q.trim().toLowerCase();
+  const L = S.guests.filter(g => (!q || g.name.toLowerCase().includes(q) || (g.phone || '').includes(q)) &&
+    (S.f === 'all' || (S.f === 'in' ? g.used_count > 0 : !g.used_count)));
+  $('#gcnt').textContent = L.length;
+  $('#gl').innerHTML = L.map(guestRow).join('') || `<p class="mu">${S.guests.length ? 'لا توجد نتائج مطابقة.' : 'لا يوجد مدعوون بعد. أضف أول مدعو من النموذج أعلاه.'}</p>`;
+}
+
+function setF(f) {
+  S.f = f;
+  document.querySelectorAll('.chip[data-f]').forEach(c => c.classList.toggle('on', c.dataset.f === f));
+  drawList();
+}
+
+function exportCSV() {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [['الاسم', 'الجوال', 'التصنيف', 'عدد الأشخاص', 'دخل', 'الكود', 'أول دخول']]
+    .concat(S.guests.map(g => [g.name, g.phone, CATS[g.category]?.[0] || g.category, g.seats, g.used_count, g.code, g.first_entry_at || '']));
+  const blob = new Blob(['\ufeff' + rows.map(r => r.map(q).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'guests.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+async function delGuest(id) {
+  const g = S.guests.find(x => x.id === id); if (!g) return;
+  if (!confirm(`حذف "${g.name}" من القائمة؟${g.used_count ? '\nتنبيه: هذا المدعو سجّل دخولًا.' : ''}`)) return;
+  const { error } = await sb.from('guests').delete().eq('id', id);
+  if (error) return alert('تعذّر الحذف: ' + error.message);
+  vGuests();
 }
 
 function previewPhone(v) {
@@ -300,7 +347,8 @@ function guestRow(g) {
       <b>${esc(g.name)}</b> <span class="mu">· ${CATS[g.category]?.[0] || esc(g.category)}</span><br>
       <span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone || 'بدون رقم')}${g.seats > 1 ? ' · ' + g.seats + ' أشخاص' : ''}</span></div>
     <span class="tag ${g.used_count ? (full ? 't-ok' : 't-wn') : 't-mu'}">${g.used_count ? `دخل ${g.used_count}/${g.seats}` : 'لم يحضر'}</span>
-    <button class="btn s" onclick="showQR('${g.id}')">📱 الباركود</button></div>`;
+    <button class="btn s" onclick="showQR('${g.id}')">📱 الباركود</button>
+    <button class="ico" title="حذف" aria-label="حذف" onclick="delGuest('${g.id}')">🗑</button></div>`;
 }
 
 async function addGuest() {
@@ -309,7 +357,7 @@ async function addGuest() {
   const raw = $('#gp').value.trim();
   const phone = raw ? normPhone(raw) : null;
   if (phone && !validPhone(phone)) return notice('#gm', 'الرقم غير صحيح، تأكد منه', false);
-  const { error } = await sb.from('guests').insert({ event_id: S.ev.id, name, phone, seats: parseInt($('#gs').value) || 1 });
+  const { error } = await sb.from('guests').insert({ event_id: S.ev.id, name, phone, category: $('#gc').value, seats: Math.max(1, parseInt($('#gs').value) || 1) });
   if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message, false);
   vGuests();
 }
@@ -318,7 +366,7 @@ async function addBulk() {
   const lines = $('#bulk').value.split('\n').map(x => x.trim()).filter(Boolean);
   if (!lines.length) return notice('#gm', 'القائمة فارغة', false);
   const rows = lines.map(parseLine).filter(r => r.name).map(r => ({
-    event_id: S.ev.id, name: r.name, phone: validPhone(r.phone) ? r.phone : null, seats: 1
+    event_id: S.ev.id, name: r.name, phone: validPhone(r.phone) ? r.phone : null, category: $('#gc').value, seats: 1
   }));
   const { error } = await sb.from('guests').insert(rows);
   if (error) return notice('#gm', 'تعذّر الإضافة: ' + error.message, false);
@@ -645,8 +693,8 @@ function vScan() {
     <div id="reader" style="margin:14px auto"></div>
     <div style="margin:14px 0"><button class="btn" id="camBtn" onclick="toggleCam()">تشغيل الكاميرا</button></div>
     <div class="f" style="text-align:start;margin-top:16px">
-      <div><label>أو أدخل الكود يدويًا</label><input id="man" style="direction:ltr;text-transform:uppercase"></div>
-      <button class="btn g" onclick="check($('#man').value)">تحقق</button>
+      <div><label>أو أدخل الكود يدويًا</label><input id="man" style="direction:ltr;text-transform:uppercase" onkeydown="if(event.key==='Enter')doManual()"></div>
+      <button class="btn g" onclick="doManual()">تحقق</button>
     </div>
     <div id="res"></div>
   </div>`;
@@ -664,6 +712,15 @@ async function toggleCam() {
   } catch (e) { S.scanner = null; alert('تعذّر تشغيل الكاميرا. امنح الإذن أو استخدم الإدخال اليدوي.'); }
 }
 
+function doManual() { const i = $('#man'); check(i.value); i.value = ''; }
+function beep(ok) {
+  try {
+    const c = S.ac || (S.ac = new (window.AudioContext || window.webkitAudioContext)());
+    const o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value = ok ? 880 : 220; g.gain.value = .15;
+    o.start(); o.stop(c.currentTime + (ok ? .15 : .4));
+  } catch (e) {}
+}
 const SCAN_MAP = {
   ok:        { cls: 'ok',  ic: '✅', t: 'مسموح بالدخول' },
   duplicate: { cls: 'dup', ic: '⚠', t: 'تم استخدام الكود' },
@@ -686,6 +743,8 @@ async function check(raw) {
     : data.result === 'closed' ? 'انتهت مهلة هذه المناسبة' : 'هذه الباقة لا تشمل المسح';
   box.className = m.cls;
   box.innerHTML = `<div class="ic">${m.ic}</div><h2>${m.t}</h2><div style="margin-top:6px;font-weight:600">${sub}</div>`;
+  beep(data.result === 'ok');
+  clearTimeout(S.ht); S.ht = setTimeout(() => { box.style.display = 'none'; }, 5000);
   if (navigator.vibrate) navigator.vibrate(data.result === 'ok' ? 80 : [120, 60, 120]);
 }
 
@@ -694,13 +753,24 @@ async function vStats() {
   const v = $('#view');
   let G = []; try { G = await loadGuests(); } catch (e) { return v.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
   const inside = G.reduce((a, g) => a + g.used_count, 0), expected = G.reduce((a, g) => a + g.seats, 0);
+  const pct = expected ? Math.round(inside / expected * 100) : 0;
+  const cats = Object.entries(CATS).map(([k, c]) => {
+    const L = G.filter(g => g.category === k);
+    return L.length ? `<div class="row"><b class="grow" style="color:${c[1]}">${c[0]}</b><span class="mu">${L.reduce((a, g) => a + g.used_count, 0)} من ${L.reduce((a, g) => a + g.seats, 0)}</span></div>` : '';
+  }).join('');
+  const last = G.filter(g => g.first_entry_at).sort((a, b) => new Date(b.first_entry_at) - new Date(a.first_entry_at)).slice(0, 6);
   v.innerHTML = `
   <div class="grid">
     ${stat(inside + '/' + expected, 'الأشخاص الداخلون')}
     ${stat(G.filter(g => g.used_count > 0).length, 'حضروا')}
     ${stat(G.filter(g => !g.used_count).length, 'لم يحضروا')}
   </div>
-  <div class="card mu" style="text-align:center">للتحديث اضغط التبويب مرة أخرى.</div>`;
+  <div class="card"><h2>نسبة الحضور ${pct}%</h2><div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
+  ${cats ? `<div class="card"><h2>حسب التصنيف</h2>${cats}</div>` : ''}
+  ${last.length ? `<div class="card"><h2>آخر الداخلين</h2>${last.map(g => `<div class="row"><b class="grow">${esc(g.name)}</b><span class="mu">${fmt(g.first_entry_at)}</span></div>`).join('')}</div>` : ''}
+  <div class="card mu" style="text-align:center">يتحدّث تلقائيًا كل 20 ثانية <button class="btn s" style="margin-inline-start:8px" onclick="vStats()">تحديث الآن</button></div>`;
+  clearInterval(S.tm);
+  S.tm = setInterval(() => { if (S.tab === 'stats') vStats(); else clearInterval(S.tm); }, 20000);
 }
 
 boot();
