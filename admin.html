@@ -2,45 +2,86 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>عبور | الإدارة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>عبور | لوحة الإدارة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <style>
-:root{--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ok:#15803d;--er:#b91c1c;--okb:#dcfce7;--erb:#fee2e2}
+:root{color-scheme:light;--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ac:#c9a24b;--ok:#15803d;--okb:#dcfce7;--wn:#c2410c;--wnb:#ffedd5;--er:#b91c1c;--erb:#fee2e2}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px}
-header{background:var(--pr);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-header b{font-size:20px}
-main{max-width:720px;margin:0 auto;padding:14px}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Tajawal,system-ui,sans-serif;font-size:15px;line-height:1.5}
+body{min-height:100vh;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{position:sticky;top:0;z-index:10;background:var(--pr);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px}
+header .t{flex:1;min-width:0}
+header b{font-size:20px;font-weight:800;display:block}
+header small{opacity:.8;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#menuBtn{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;width:42px;height:42px;font-size:22px;cursor:pointer}
+body.locked #menuBtn{display:none}
+main{max-width:980px;margin:0 auto;padding:14px}
+/* القائمة الجانبية (من اليمين) */
+#scrim{position:fixed;inset:0;background:#0007;opacity:0;pointer-events:none;transition:opacity .2s;z-index:19}
+#side{position:fixed;top:0;right:0;height:100%;width:270px;max-width:82vw;background:var(--sf);box-shadow:-4px 0 24px #0003;transform:translateX(100%);transition:transform .25s;z-index:20;padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+body.open #side{transform:none}
+body.open #scrim{opacity:1;pointer-events:auto}
+#side .sh{font-weight:800;font-size:20px;color:var(--pr);padding:4px 10px 14px;border-bottom:1px solid var(--bd);margin-bottom:6px}
+#side button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 12px;border-radius:10px;font-weight:700;color:var(--tx)}
+#side button:hover{background:var(--bg)}
+#side button.on{background:var(--pr);color:#fff}
+#side button i{font-style:normal;width:24px;text-align:center}
+body.locked #side{display:none}
+/* عناصر عامة */
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
 h2{margin:0 0 10px;font-size:18px}
-label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
-input{width:100%;font:inherit;padding:10px;border:1px solid var(--bd);border-radius:10px;background:#fff}
-.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer;margin-top:12px}
-.btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-size:13px;margin:0}
-.btn:disabled{opacity:.5}
-.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-wrap:wrap}
-.row:first-child{border-top:0}
-.grow{flex:1;min-width:150px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:26px;font-weight:800;color:var(--pr)}.stat span{color:var(--mu);font-size:13px}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:end}
+label{font-size:12px;color:var(--mu);display:block;margin-bottom:3px}
+input,select{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx)}
+.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--tx);margin:0}.chk input{width:auto}
+.btn{border:0;background:var(--pr);color:#fff;font:inherit;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer}
+.btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-size:13px}
+.btn.g{background:var(--ac);color:#1b2430}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;align-items:center;gap:8px;padding:12px 0;border-top:1px solid var(--bd);flex-wrap:wrap}
+.row:first-of-type{border-top:0}.grow{flex:1;min-width:170px}
+.tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;display:inline-block}
+.t-ok{background:var(--okb);color:var(--ok)}.t-er{background:var(--erb);color:var(--er)}.t-wn{background:var(--wnb);color:var(--wn)}.t-mu{background:var(--bg);color:var(--mu)}
 .mu{color:var(--mu);font-size:13px}
-code{direction:ltr;display:inline-block;background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
-.msg{padding:10px;border-radius:10px;margin-top:10px;font-size:14px}
-.ok{background:var(--okb);color:var(--ok)}
-.err{background:var(--erb);color:var(--er)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:520px){.g2{grid-template-columns:1fr}}
+code{font-family:ui-monospace,monospace;background:var(--bg);padding:1px 6px;border-radius:6px;font-size:12px;direction:ltr;display:inline-block;word-break:break-all}
+.msg{padding:10px;border-radius:12px;margin-top:10px;font-size:14px}
+.msg.ok{background:var(--okb);color:var(--ok)}.msg.err{background:var(--erb);color:var(--er)}
+.box{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);padding:10px;border-radius:10px;margin:6px 0;font-size:14px}
+.login{max-width:360px;margin:40px auto}
+.warn{border-inline-start:4px solid var(--wn)}
+@media(max-width:560px){.f{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
-<header><b>عبور · الإدارة</b><button class="btn s" id="out" style="display:none" onclick="logout()">خروج</button></header>
+<body class="locked">
+<div id="scrim" onclick="closeMenu()"></div>
+
+<aside id="side">
+  <div class="sh">🎟️ عبور</div>
+  <button data-s="home" onclick="go('home')"><i>🏠</i>الرئيسية</button>
+  <button data-s="events" onclick="go('events')"><i>📋</i>المناسبات</button>
+  <button data-s="new" onclick="go('new')"><i>➕</i>حفلة جديدة</button>
+  <button data-s="links" onclick="go('links')"><i>🔗</i>الروابط</button>
+  <button data-s="settings" onclick="go('settings')"><i>⚙️</i>الإعدادات</button>
+</aside>
+
+<header>
+  <button id="menuBtn" onclick="toggleMenu()" aria-label="القائمة">☰</button>
+  <div class="t"><b>عبور</b><small id="today"></small></div>
+</header>
+
 <main id="app"></main>
 
 <script>
 /* ====== الإعدادات ====== */
 const SUPA_URL = 'https://rkqgzmnmuyoaypuiihni.supabase.co';
 const SUPA_KEY = 'sb_publishable_vJSc2jJflbqcd_pe3LCMAQ_yQ2S7Ffg';
-// رابط صفحة العميل بعد رفعها (بدّله بعد النشر)
-const APP_URL  = 'https://YOUR-APP-SITE.netlify.app/app.html';
+const APP_URL  = 'https://YOUR-APP-SITE.netlify.app/app.html'; // بدّله بعد نشر صفحة العملاء
 
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const $ = s => document.querySelector(s);
@@ -48,20 +89,58 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const iso = v => v ? new Date(v).toISOString() : null;
 const nul = v => (v === '' || v == null) ? null : v;
 const baseLink = () => APP_URL.replace(/#.*$/, '');
+const fmt = d => d ? new Date(d).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+const PK = { codes: 'الأكواد', msgs: 'الرسائل', cards: 'البطاقات' };
+const SECS = { home: 'الرئيسية', events: 'المناسبات', new: 'حفلة جديدة', links: 'الروابط', settings: 'الإعدادات' };
+let EV = [], LOGGED = false, ME = null;
 
-function notice(id, text, ok) {
-  const el = $(id); if (!el) return;
-  el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text;
+/* ====== أدوات ====== */
+function notice(sel, text, ok) { const el = $(sel); if (el) { el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; } }
+const stat = (a, b) => `<div class="stat"><b>${a}</b><span>${b}</span></div>`;
+function status(e) {
+  const now = new Date();
+  if (e.suspended) return { k: 'suspended', l: 'موقوف', c: 't-er' };
+  if (e.closes_at && new Date(e.closes_at) <= now) return { k: 'expired', l: 'منتهٍ', c: 't-mu' };
+  if (e.opens_at && new Date(e.opens_at) > now) return { k: 'pending', l: 'لم يبدأ', c: 't-wn' };
+  return { k: 'active', l: 'نشط', c: 't-ok' };
+}
+const daysLeft = e => e.closes_at ? Math.ceil((new Date(e.closes_at) - new Date()) / 864e5) : null;
+function copyText(t) { navigator.clipboard.writeText(t).then(() => alert('تم النسخ'), () => prompt('انسخ:', t)); }
+
+function updateToday() {
+  const g = new Date().toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const h = new Date().toLocaleDateString('ar-SA-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#today').textContent = `${g} · ${h} هـ`;
+}
+
+/* ====== القائمة ====== */
+function toggleMenu() { document.body.classList.toggle('open'); }
+function closeMenu() { document.body.classList.remove('open'); }
+function markActive(s) { document.querySelectorAll('#side button').forEach(b => b.classList.toggle('on', b.dataset.s === s)); }
+function go(s) { closeMenu(); location.hash = s; show(s); }
+const curSec = () => SECS[location.hash.slice(1)] ? location.hash.slice(1) : 'home';
+window.onhashchange = () => { if (LOGGED) show(curSec()); };
+
+/* ====== البيانات ====== */
+async function loadEV() {
+  const [ev, ls] = await Promise.all([
+    sb.from('events').select('*').order('created_at', { ascending: false }),
+    sb.from('link_stats').select('*')
+  ]);
+  if (ev.error) throw new Error(ev.error.message);
+  const L = {};
+  (ls.data || []).forEach(x => L[x.event_id] = x);
+  EV = ev.data.map(e => ({ ...e, opens: L[e.id]?.opens || 0, last: L[e.id]?.last_open || null }));
 }
 
 /* ====== الدخول ====== */
 function loginView(msg = '') {
-  $('#out').style.display = 'none';
+  LOGGED = false; document.body.classList.add('locked'); closeMenu();
   $('#app').innerHTML = `
-  <div class="card" style="max-width:360px;margin:40px auto">
-    <h2>تسجيل دخول الإدارة</h2>
-    <label>الإيميل</label><input id="em" type="email" style="direction:ltr">
-    <label>كلمة المرور</label><input id="pw" type="password" style="direction:ltr">
+  <div class="card login">
+    <h2>تسجيل الدخول</h2>
+    <label>الإيميل</label><input id="em" type="email" style="direction:ltr;margin-bottom:8px">
+    <label>كلمة المرور</label><input id="pw" type="password" style="direction:ltr;margin-bottom:12px">
     <button class="btn" style="width:100%" onclick="login()">دخول</button>
     <div id="lm"></div>
   </div>`;
@@ -69,116 +148,195 @@ function loginView(msg = '') {
 }
 
 async function login() {
-  const email = $('#em').value.trim(), password = $('#pw').value;
-  const { error } = await sb.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value });
   if (error) return notice('#lm', 'الإيميل أو كلمة المرور غير صحيحة', false);
-  const { data: isAdmin } = await sb.rpc('is_admin');
-  if (!isAdmin) { await sb.auth.signOut(); return notice('#lm', 'هذا الحساب ليس سوبر أدمن', false); }
-  dashboard();
+  const { data: ok } = await sb.rpc('is_admin');
+  if (!ok) { await sb.auth.signOut(); return notice('#lm', 'هذا الحساب ليس سوبر أدمن', false); }
+  enter();
 }
 
-async function logout() {
-  await sb.auth.signOut();
-  loginView();
+async function logout() { await sb.auth.signOut(); location.hash = ''; loginView(); }
+
+function enter() {
+  LOGGED = true; document.body.classList.remove('locked');
+  if (!SECS[location.hash.slice(1)]) history.replaceState(null, '', '#home');
+  show(curSec());
 }
 
-/* ====== لوحة الإدارة ====== */
-function dashboard() {
-  $('#out').style.display = 'inline-block';
+/* ====== الأقسام ====== */
+async function show(s) {
+  markActive(s);
+  $('#app').innerHTML = '<div class="card mu">جارٍ التحميل...</div>';
+  try { await loadEV(); } catch (e) { $('#app').innerHTML = `<div class="msg err">خطأ: ${esc(e.message)}</div>`; return; }
+  ({ home: vHome, events: vEvents, new: vNew, links: vLinks, settings: vSettings })[s]();
+  updateToday();
+  window.scrollTo(0, 0);
+}
+
+function vHome() {
+  const act = EV.filter(e => status(e).k === 'active');
+  const soon = act.filter(e => daysLeft(e) !== null && daysLeft(e) <= 3);
+  const totalOpens = EV.reduce((a, e) => a + e.opens, 0);
+  $('#app').innerHTML = `
+  <div class="grid">
+    ${stat(EV.length, 'مناسبات')}
+    ${stat(act.length, 'نشطة')}
+    ${stat(EV.filter(e => status(e).k === 'expired').length, 'منتهية')}
+    ${stat(totalOpens, 'مرات فتح الروابط')}
+  </div>
+  ${soon.length ? `<div class="card warn"><h2>⏳ تنتهي قريبًا</h2>${soon.map(e =>
+    `<div class="row"><div class="grow"><b>${esc(e.name)}</b><br><span class="mu">${esc(e.client_name)} · تنتهي خلال ${Math.max(daysLeft(e), 0)} أيام</span></div>
+     <button class="btn s" onclick="extId('${e.id}')">+7 أيام</button></div>`).join('')}</div>` : ''}
+  <div class="card"><h2>آخر المناسبات</h2>${EV.slice(0, 3).map(cardHTML).join('') || '<p class="mu">لا توجد مناسبات بعد. ابدأ من «حفلة جديدة».</p>'}</div>`;
+}
+
+function cardHTML(e) {
+  const st = status(e), link = baseLink() + '#' + e.link_token;
+  const pk = Object.keys(PK).filter(k => e['pkg_' + k]).map(k => PK[k]).join(' · ') || 'بدون باقات';
+  return `<div class="row">
+    <div class="grow">
+      <b>${esc(e.name)}</b> <span class="tag ${st.c}">${st.l}</span><br>
+      <span class="mu">${esc(e.client_name)} · ${pk} · الاستقبال ${e.staff_limit}</span><br>
+      <span class="mu">من ${fmt(e.opens_at)} إلى ${fmt(e.closes_at)}</span>
+    </div>
+    <button class="btn s" data-t="${esc(link)}" onclick="copyText(this.dataset.t)">نسخ الرابط</button>
+    <button class="btn s" onclick="extId('${e.id}')">+7 أيام</button>
+    <button class="btn s" onclick="toggleId('${e.id}')">${e.suspended ? 'تفعيل' : 'إيقاف'}</button>
+  </div>`;
+}
+
+function vEvents() {
   $('#app').innerHTML = `
   <div class="card">
-    <h2>➕ حساب عميل جديد</h2>
-    <div class="g2">
+    <div class="f">
+      <div><label>بحث</label><input id="q" placeholder="اسم المناسبة أو العميل" oninput="paintEvents()"></div>
+      <div><label>الحالة</label><select id="st" onchange="paintEvents()">
+        <option value="all">الكل</option><option value="active">نشطة</option><option value="pending">لم تبدأ</option>
+        <option value="suspended">موقوفة</option><option value="expired">منتهية (الأرشيف)</option></select></div>
+    </div>
+  </div>
+  <div class="card" id="evlist"></div>`;
+  paintEvents();
+}
+
+function paintEvents() {
+  const q = ($('#q')?.value || '').trim().toLowerCase(), st = $('#st')?.value || 'all';
+  const arr = EV.filter(e => (st === 'all' || status(e).k === st) &&
+    (!q || (e.name + ' ' + (e.client_name || '')).toLowerCase().includes(q)));
+  $('#evlist').innerHTML = arr.map(cardHTML).join('') || '<p class="mu">لا توجد نتائج.</p>';
+}
+
+function vNew() {
+  $('#app').innerHTML = `
+  <div class="card">
+    <h2>➕ حفلة جديدة</h2>
+    <div class="f">
       <div><label>اسم المناسبة</label><input id="n"></div>
       <div><label>اسم العميل</label><input id="c"></div>
       <div><label>من تاريخ</label><input id="sd" type="date"></div>
       <div><label>إلى تاريخ</label><input id="ed" type="date"></div>
       <div><label>الحد الأقصى للمدعوين</label><input id="gl" type="number" value="100"></div>
-      <div><label>عدد حسابات الاستقبال (0 إلى 3)</label><input id="sl" type="number" min="0" max="3" value="1"></div>
+      <div><label>حسابات الاستقبال (0 إلى 3)</label><input id="sl" type="number" min="0" max="3" value="1"></div>
       <div><label>يفتح الرابط في</label><input id="ko" type="datetime-local"></div>
       <div><label>يقفل الرابط في</label><input id="kc" type="datetime-local"></div>
-      <div><label>اسم مستخدم العميل (إنجليزي وأرقام)</label><input id="un" style="direction:ltr"></div>
-      <div><label>كلمة مرور العميل</label><input id="up" style="direction:ltr" value="${Math.random().toString(36).slice(2,8)}"></div>
+      <div><label>اسم مستخدم العميل</label><input id="un" style="direction:ltr"></div>
+      <div><label>كلمة مرور العميل</label><input id="up" style="direction:ltr" value="${Math.random().toString(36).slice(2, 8)}"></div>
     </div>
-    <label>الباقات</label>
-    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pc" type="checkbox" style="width:auto" checked> الأكواد والاستقبال</label>
-    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pm" type="checkbox" style="width:auto"> الرسائل</label>
-    <label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input id="pb" type="checkbox" style="width:auto"> البطاقات</label>
-    <button class="btn" id="create" onclick="createClient()">إنشاء الحساب وتوليد الرابط</button>
+    <label style="margin-top:10px">الباقات</label>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <label class="chk"><input id="pc" type="checkbox" checked> الأكواد والاستقبال</label>
+      <label class="chk"><input id="pm" type="checkbox"> الرسائل</label>
+      <label class="chk"><input id="pb" type="checkbox"> البطاقات</label>
+    </div>
+    <button class="btn" id="create" style="margin-top:12px" onclick="createClient()">إنشاء الحساب وتوليد الرابط</button>
     <div id="cm"></div>
-  </div>
-  <div class="card"><h2>المناسبات</h2><div id="list" class="mu">جارٍ التحميل...</div></div>`;
-  loadEvents();
+  </div>`;
 }
 
 async function createClient() {
   const btn = $('#create'); btn.disabled = true;
-  const payload = {
-    p_name: $('#n').value.trim(),
-    p_client: $('#c').value.trim(),
-    p_starts: nul($('#sd').value),
-    p_ends: nul($('#ed').value),
-    p_guest_limit: parseInt($('#gl').value) || 100,
-    p_staff_limit: parseInt($('#sl').value) || 0,
-    p_codes: $('#pc').checked,
-    p_msgs: $('#pm').checked,
-    p_cards: $('#pb').checked,
-    p_opens: iso($('#ko').value),
-    p_closes: iso($('#kc').value),
-    p_username: $('#un').value.trim().toLowerCase(),
-    p_password: $('#up').value
+  const p = {
+    p_name: $('#n').value.trim(), p_client: $('#c').value.trim(),
+    p_starts: nul($('#sd').value), p_ends: nul($('#ed').value),
+    p_guest_limit: parseInt($('#gl').value) || 100, p_staff_limit: parseInt($('#sl').value) || 0,
+    p_codes: $('#pc').checked, p_msgs: $('#pm').checked, p_cards: $('#pb').checked,
+    p_opens: iso($('#ko').value), p_closes: iso($('#kc').value),
+    p_username: $('#un').value.trim().toLowerCase(), p_password: $('#up').value
   };
-  if (!payload.p_name) { btn.disabled = false; return notice('#cm', 'اكتب اسم المناسبة', false); }
-
-  const { data, error } = await sb.rpc('admin_create_client', payload);
+  if (!p.p_name) { btn.disabled = false; return notice('#cm', 'اكتب اسم المناسبة', false); }
+  const { data, error } = await sb.rpc('admin_create_client', p);
   btn.disabled = false;
   if (error) return notice('#cm', 'تعذّر الإنشاء: ' + error.message, false);
 
   const link = baseLink() + '#' + data.token;
-  const text = `حيّاك الله،\nرابط حفلتك: ${link}\nاسم المستخدم: ${payload.p_username}\nكلمة المرور: ${payload.p_password}\nيعمل الرابط من ${$('#ko').value || 'الآن'} حتى ${$('#kc').value || 'نهاية المناسبة'}`;
+  const text = `حيّاك الله،\nرابط حفلتك: ${link}\nاسم المستخدم: ${p.p_username}\nكلمة المرور: ${p.p_password}\nيعمل الرابط من ${$('#ko').value || 'الآن'} حتى ${$('#kc').value || 'نهاية المناسبة'}`;
   $('#cm').innerHTML = `<div class="msg ok">تم إنشاء الحساب.</div>
-    <label>نص الرسالة للعميل</label><code style="white-space:pre-wrap;display:block">${esc(text)}</code>
-    <button class="btn s" onclick="copyText(this.dataset.t)" data-t="${esc(text)}">نسخ الرسالة</button>`;
-  loadEvents();
+    <div class="box">${esc(text)}</div>
+    <button class="btn s" data-t="${esc(text)}" onclick="copyText(this.dataset.t)">نسخ الرسالة للعميل</button>
+    <button class="btn s" onclick="go('links')">عرض الروابط</button>`;
 }
 
-async function loadEvents() {
-  const { data, error } = await sb.from('events')
-    .select('id,name,client_name,link_token,opens_at,closes_at,suspended,pkg_codes,pkg_msgs,pkg_cards,staff_limit')
-    .order('created_at', { ascending: false });
-  if (error) return $('#list').textContent = 'خطأ: ' + error.message;
-  if (!data.length) return $('#list').textContent = 'لا توجد مناسبات بعد.';
-  $('#list').innerHTML = data.map(e => {
-    const link = baseLink() + '#' + e.link_token;
-    const pk = [e.pkg_codes && 'أكواد', e.pkg_msgs && 'رسائل', e.pkg_cards && 'بطاقات'].filter(Boolean).join(' · ');
+function vLinks() {
+  $('#app').innerHTML = `<div class="card"><h2>🔗 متابعة الروابط</h2><p class="mu">عدد مرات الفتح يظهر بعد أن يبدأ تطبيق العميل بتسجيل الفتح.</p><div id="lk"></div></div>`;
+  $('#lk').innerHTML = EV.map(e => {
+    const st = status(e), link = baseLink() + '#' + e.link_token;
     return `<div class="row">
-      <div class="grow"><b>${esc(e.name)}</b> <span class="mu">· ${esc(e.client_name)}</span><br>
-        <span class="mu">${pk || 'بدون باقات'} · الاستقبال ${e.staff_limit}</span><br>
-        <span class="mu">الرابط:</span> <code>${esc(link)}</code></div>
-      <button class="btn s" data-t="${esc(link)}" onclick="copyText(this.dataset.t)">نسخ الرابط</button>
-      <button class="btn s" onclick="regen('${e.id}')">رابط جديد</button>
+      <div class="grow"><b>${esc(e.name)}</b> <span class="tag ${st.c}">${st.l}</span><br>
+        <span class="mu">فتح ${e.opens} مرة · آخر فتح: ${e.last ? fmt(e.last) : 'لم يُفتح بعد'}</span><br>
+        <code>${esc(link)}</code></div>
+      <button class="btn s" data-t="${esc(link)}" onclick="copyText(this.dataset.t)">نسخ</button>
+      <button class="btn s" onclick="regenId('${e.id}')">رابط جديد</button>
     </div>`;
-  }).join('');
+  }).join('') || '<p class="mu">لا توجد روابط بعد.</p>';
 }
 
-function copyText(t) { navigator.clipboard.writeText(t).then(() => alert('تم النسخ')); }
+async function vSettings() {
+  const { data } = await sb.auth.getUser();
+  $('#app').innerHTML = `
+  <div class="card">
+    <h2>⚙️ الإعدادات</h2>
+    <label>الحساب الحالي</label><div style="direction:ltr;margin-bottom:12px">${esc(data.user?.email || '—')}</div>
+    <label>رابط صفحة العميل</label><code>${esc(APP_URL)}</code>
+    <p class="mu">لتغيير هذا الرابط عدّل السطر الأول في الإعدادات داخل الملف.</p>
+    <button class="btn d" style="background:var(--er);color:#fff;margin-top:10px" onclick="logout()">تسجيل الخروج</button>
+  </div>`;
+}
 
-async function regen(id) {
-  if (!confirm('سيُلغى الرابط القديم. متابعة؟')) return;
+/* ====== إجراءات ====== */
+async function extId(id) {
+  const e = EV.find(x => x.id === id);
+  const base = e.closes_at && new Date(e.closes_at) > new Date() ? new Date(e.closes_at) : new Date();
+  base.setDate(base.getDate() + 7);
+  const { error } = await sb.from('events').update({ closes_at: base.toISOString() }).eq('id', id);
+  if (error) return alert('خطأ: ' + error.message);
+  show(curSec());
+}
+
+async function toggleId(id) {
+  const e = EV.find(x => x.id === id);
+  const { error } = await sb.from('events').update({ suspended: !e.suspended }).eq('id', id);
+  if (error) return alert('خطأ: ' + error.message);
+  show(curSec());
+}
+
+async function regenId(id) {
+  if (!confirm('سيُلغى الرابط القديم ولن يعمل. متابعة؟')) return;
   const { error } = await sb.rpc('admin_regen_link', { p_event: id });
   if (error) return alert('خطأ: ' + error.message);
-  loadEvents();
+  show(curSec());
 }
 
 /* ====== البداية ====== */
 (async () => {
+  updateToday();
   const { data } = await sb.auth.getSession();
   if (data.session) {
-    const { data: isAdmin } = await sb.rpc('is_admin');
-    if (isAdmin) return dashboard();
+    const { data: ok } = await sb.rpc('is_admin');
+    if (ok) return enter();
     await sb.auth.signOut();
   }
   loginView();
 })();
 </script>
 </body>
+</html>
