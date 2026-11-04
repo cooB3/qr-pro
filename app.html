@@ -438,6 +438,29 @@ function composeFor(g) {
   return composeTemplate(g, TP.length - 1);
 }
 
+// معاينة التصميم المختار، مع باركود افتراضي يوضح مكان الباركود الحقيقي
+function previewHTML() {
+  const sample = { id: 'sample', name: 'اسم المدعو', category: 'guest', code: 'SAMPLE-CODE-0000' };
+  const mode = currentMode();
+  const inner = (mode === 'mine' && S.custom) ? customHTML(sample)
+    : badgeHTML(sample, mode === 'template' ? (S.ev.invite_tpl ?? 0) : TP.length - 1);
+  setTimeout(() => fillQR(document.getElementById('prev')), 0);
+  return `<div id="prev" style="width:170px;height:245px;position:relative;overflow:hidden;margin:6px auto">
+    <div style="position:absolute;left:0;top:0;transform:scale(.5);transform-origin:0 0;width:90mm">${inner}</div></div>
+    <p class="mu" style="text-align:center">هذا باركود افتراضي، وسيُستبدل بباركود كل مدعو عند الإرسال.</p>`;
+}
+
+// تنزيل صورة الدعوة الخاصة بالمدعو، لإرفاقها في واتساب
+async function downloadDesign(g) {
+  try {
+    const blob = await composeFor(g);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `invite-${(g.name || 'guest').split(' ')[0]}.png`;
+    a.click();
+  } catch (e) { alert('تعذّر تحضير صورة الدعوة: ' + e.message); }
+}
+
 async function saveDesign() {
   const mode = $('#dm').value, tpl = parseInt($('#dt').value) || 0;
   const { error } = await sb.from('events').update({ invite_mode: mode, invite_tpl: tpl }).eq('id', S.ev.id);
@@ -486,6 +509,7 @@ async function vMsgs() {
     </select>
     <div style="margin-top:6px"><label>اختر البطاقة (إذا اخترت تصميم البطاقات)</label>
       <select id="dt" onchange="saveDesign()">${TP.slice(0, 20).map((t, i) => `<option value="${i}" ${(S.ev.invite_tpl ?? 0) === i ? 'selected' : ''}>${i + 1}. ${t[0]}</option>`).join('')}</select></div>
+    ${previewHTML()}
     <h2 style="margin-top:14px">الإرسال</h2>
     <div class="grid">${stat(withPhone.length, 'لديهم أرقام')}${stat(withPhone.length - pending.length, 'تم فتحها')}${stat(pending.length, 'متبقية')}</div>
     <button class="btn g" ${pending.length ? '' : 'disabled'} onclick="sendOne('${pending[0]?.id || ''}')">إرسال التالي${pending[0] ? ': ' + esc(pending[0].name) : ''}</button>
@@ -521,10 +545,10 @@ async function composeInvite(g) {
 }
 
 async function sendOne(id) {
-  if (id) return shareWithImage(id);
   const g = S.guests.find(x => x.id === id);
   if (!g || !g.phone) return;
   window.open(`https://wa.me/${g.phone}?text=${encodeURIComponent(msgText(g))}`, '_blank');
+  downloadDesign(g);
   await sb.from('guests').update({ msg_status: 'sent', sent_at: new Date().toISOString() }).eq('id', g.id);
   setTimeout(vMsgs, 1200);
 }
