@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{color-scheme:light;--bg:#f8fafc;--sf:#ffffff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--pr:#0f3d3e;--ac:#c9a24b;--ok:#16a34a;--okb:#dcfce7;--wn:#ea580c;--wnb:#ffedd5;--er:#dc2626;--erb:#fee2e2}
 *{box-sizing:border-box}
@@ -260,6 +261,7 @@ function render() {
 
 async function setTab(t) {
   clearInterval(S.tm);
+  if (S.auto) { S.auto.run = false; clearInterval(S.auto.t); }
   if (S.scanner && t !== 'scan') { try { await S.scanner.stop(); } catch (e) {} S.scanner = null; }
   S.tab = t; render();
 }
@@ -300,7 +302,8 @@ async function vGuests() {
   <div class="card"><h2>قائمة المدعوين (<span id="gcnt">${G.length}</span>)</h2>
     <input id="sq" type="search" placeholder="ابحث بالاسم أو الرقم" value="${esc(S.q)}" oninput="S.q=this.value;drawList()">
     <div class="chips">${[['all', 'الكل'], ['in', 'حضروا'], ['out', 'لم يحضروا']].map(x => `<button class="chip ${S.f === x[0] ? 'on' : ''}" data-f="${x[0]}" onclick="setF('${x[0]}')">${x[1]}</button>`).join('')}
-      <button class="chip" style="margin-inline-start:auto" onclick="exportCSV()">⬇ تصدير CSV</button></div>
+      <button class="chip" style="margin-inline-start:auto" onclick="exportXLSX()">⬇ تصدير Excel</button>
+      <button class="chip" onclick="exportCSV()">⬇ تصدير CSV</button></div>
     <div id="gl"></div></div>`;
   drawList();
 }
@@ -317,6 +320,30 @@ function setF(f) {
   S.f = f;
   document.querySelectorAll('.chip[data-f]').forEach(c => c.classList.toggle('on', c.dataset.f === f));
   drawList();
+}
+
+async function exportXLSX() {
+  const L = S.guests.filter(g => g.phone);
+  if (!L.length) return alert('لا توجد أسماء بأرقام للتصدير.');
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('جهات الاتصال', { views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }] });
+    ws.columns = [{ header: 'الاسم', key: 'n', width: 34 }, { header: 'رقم الجوال', key: 'p', width: 20 }];
+    L.forEach(g => ws.addRow({ n: g.name, p: String(g.phone) }));
+    const e = { style: 'thin', color: { argb: 'FF94A3B8' } }, border = { top: e, left: e, bottom: e, right: e };
+    ws.eachRow((r, i) => {
+      r.height = 22;
+      r.eachCell(c => {
+        c.border = border; c.alignment = { horizontal: 'center', vertical: 'middle' };
+        if (i === 1) { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F3D3E' } }; }
+      });
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = 'contacts.xlsx'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (err) { alert('تعذّر إنشاء ملف Excel: ' + err.message); }
 }
 
 function exportCSV() {
@@ -431,9 +458,48 @@ async function vMsgs() {
     <button class="btn g" ${pending.length ? '' : 'disabled'} onclick="sendOne('${pending[0]?.id || ''}')">إرسال التالي${pending[0] ? ': ' + esc(pending[0].name) : ''}</button>
     ${S.img && pending.length ? ` <button class="btn s" onclick="shareWithImage('${pending[0].id}')">إرسال مع الصورة</button>` : ''}
   </div>
+  <div class="card">
+    <h2>⏱ الإرسال المتتابع</h2>
+    <p class="mu">يفتح محادثة كل مدعو تلقائيًا والرسالة جاهزة، بفاصل زمني بين محادثة وأخرى. اضغط إرسال في واتساب ويب عند ظهور كل محادثة.</p>
+    <div class="f" style="margin-top:10px">
+      <div><label>الفاصل بالثواني (15 فأكثر)</label><input id="ad" type="number" min="15" value="30"></div>
+      <label style="display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="ar" style="width:auto" checked> فاصل عشوائي ±30%</label>
+      <button class="btn g" ${pending.length ? '' : 'disabled'} onclick="autoStart()">▶ ابدأ (${pending.length})</button>
+      <button class="btn s" onclick="autoStop()">⏹ إيقاف</button>
+    </div>
+    <div id="as" class="mu" style="margin-top:10px"></div>
+  </div>
   <div class="card">${withPhone.map(g => `<div class="row"><div class="grow"><b>${esc(g.name)}</b><br><span class="mu" style="direction:ltr;display:inline-block">${esc(g.phone)}</span></div>
     <span class="tag ${g.msg_status === 'sent' ? 't-ok' : 't-mu'}">${g.msg_status === 'sent' ? 'تم الإرسال' : 'لم تُرسل'}</span>
     <button class="btn s" onclick="sendOne('${g.id}')">إرسال</button></div>`).join('') || '<p class="mu">لا يوجد مدعوون بأرقام بعد.</p>'}</div>`;
+}
+
+function autoUI(t) { const el = $('#as'); if (el) el.textContent = t; }
+function autoStart() {
+  const queue = S.guests.filter(g => g.phone && g.msg_status !== 'sent').map(g => g.id);
+  if (!queue.length) return;
+  if (S.auto) clearInterval(S.auto.t);
+  S.auto = { queue, i: 0, total: queue.length, run: true, d: Math.max(15, parseInt($('#ad').value) || 30), rnd: $('#ar').checked, t: null };
+  autoStep();
+}
+function autoStop() { if (S.auto) { S.auto.run = false; clearInterval(S.auto.t); } autoUI('تم الإيقاف. يمكنك المتابعة لاحقًا بزر ابدأ.'); }
+async function autoStep() {
+  const A = S.auto; if (!A || !A.run) return;
+  if (A.i >= A.queue.length) { A.run = false; autoUI(`اكتمل: ${A.total} من ${A.total} ✅`); setTimeout(vMsgs, 1500); return; }
+  const g = S.guests.find(x => x.id === A.queue[A.i]);
+  const w = window.open(`https://wa.me/${g.phone}?text=${encodeURIComponent(msgText(g))}`, 'wa_auto');
+  if (!w) { A.run = false; return autoUI('منع المتصفح فتح النافذة. اسمح بالنوافذ المنبثقة لهذا الموقع ثم اضغط ابدأ.'); }
+  A.i++;
+  await sb.from('guests').update({ msg_status: 'sent', sent_at: new Date().toISOString() }).eq('id', g.id);
+  g.msg_status = 'sent';
+  if (A.i >= A.queue.length) return autoStep();
+  const nxt = S.guests.find(x => x.id === A.queue[A.i]);
+  let sec = Math.round(A.d * (A.rnd ? .7 + Math.random() * .6 : 1));
+  A.t = setInterval(() => {
+    if (!A.run) return clearInterval(A.t);
+    autoUI(`فُتحت ${A.i} من ${A.total} · التالي: ${nxt.name} بعد ${sec} ثانية`);
+    if (--sec < 0) { clearInterval(A.t); autoStep(); }
+  }, 1000);
 }
 
 async function saveMsgTpl() {
