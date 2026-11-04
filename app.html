@@ -405,7 +405,7 @@ function showQR(id) {
   const g = S.guests.find(x => x.id === id);
   if (!g) return;
   QRCode.toDataURL(g.code, { width: 300, margin: 2, color: { dark: '#0f3d3e', light: '#ffffff' } }).then(url => {
-    const msg = `حيّاك الله ${g.name}\nكود دخولك إلى ${S.ev.name}: ${g.code}`;
+    const msg = msgText(g);
     const wa = g.phone ? `https://wa.me/${g.phone}?text=${encodeURIComponent(msg)}` : '';
     const m = document.createElement('div');
     m.id = 'qrm';
@@ -417,6 +417,7 @@ function showQR(id) {
       <code>${esc(g.code)}</code>
       <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <a class="btn s" href="${url}" download="${esc(g.code)}.png">تنزيل الباركود</a>
+        ${navigator.canShare && navigator.canShare({ files: [new File([], 'a.png', { type: 'image/png' })] }) ? `<button class="btn s" onclick="shareQR('${g.id}')">مشاركة الصورة</button>` : ''}
         ${wa ? `<a class="btn g" href="${wa}" target="_blank">واتساب</a>` : ''}
         <button class="btn s" onclick="document.getElementById('qrm').remove()">إغلاق</button>
       </div></div>`;
@@ -424,14 +425,29 @@ function showQR(id) {
   });
 }
 
+async function shareQR(id) {
+  const g = S.guests.find(x => x.id === id); if (!g) return;
+  try {
+    const url = await QRCode.toDataURL(g.code, { width: 600, margin: 3 });
+    const blob = await (await fetch(url)).blob();
+    await navigator.share({ files: [new File([blob], g.code + '.png', { type: 'image/png' })], text: msgText(g) });
+  } catch (e) {}
+}
+
 /* ====== الرسائل ====== */
 function spin(t, g) {
   let h = 7; for (const c of g.id) h = (h * 31 + c.charCodeAt(0)) | 0;
   return t.replace(/\{([^{}|]+(?:\|[^{}|]+)+)\}/g, (_, a) => { const o = a.split('|'); return o[Math.abs(h + a.length) % o.length]; });
 }
+function ticketLink(g) {
+  const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+  return `${base}ticket.html?c=${encodeURIComponent(g.code)}&n=${encodeURIComponent(g.name)}&e=${encodeURIComponent(S.ev.name)}`;
+}
 function msgText(g) {
-  return spin(S.ev.msg_template || DEF_MSG, g)
-    .replace(/\{name\}/g, g.name).replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
+  const tpl = spin(S.ev.msg_template || DEF_MSG, g);
+  const t = tpl.replace(/\{name\}/g, g.name).replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
+  const link = ticketLink(g);
+  return /\{link\}/.test(tpl) ? t.replace(/\{link\}/g, link) : t + '\nباركود دخولك (اعرضه عند الباب):\n' + link;
 }
 
 async function vMsgs() {
@@ -444,7 +460,7 @@ async function vMsgs() {
   <div class="card">
     <h2>💬 نص الدعوة</h2>
     <textarea id="mt" rows="5">${esc(tpl)}</textarea>
-    <p class="mu" style="margin-top:6px">المتغيرات: {name} الاسم، {event} المناسبة، {code} الكود.</p>
+    <p class="mu" style="margin-top:6px">المتغيرات: {name} الاسم، {event} المناسبة، {code} الكود، {link} رابط الباركود (يُضاف تلقائيًا في آخر الرسالة إن لم تكتبه).</p>
     <div style="display:flex;gap:6px;margin-top:8px"><button class="btn s" onclick="saveMsgTpl()">حفظ النص</button></div>
     <div id="mm"></div>
     <label style="margin-top:16px">صورة الدعوة (اختياري)</label>
