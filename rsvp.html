@@ -120,6 +120,7 @@ async function submit() {
 
   if (data.result === 'declined') return card('<h2>شكرًا لردك</h2><p>نأمل أن نراك في مناسبة أخرى.</p>');
   if (data.result === 'exists') return msg('هذا الرقم مسجل مسبقًا في هذه الدعوة. تواصل مع أصحاب الحفلة.', false);
+  if (!data.code) return card(`<h2>شكرًا ${esc(data.name)}</h2><p>تم تسجيل قبولك لدعوة ${esc(data.event || '')}.</p>${data.venue ? `<p>📍 ${esc(data.venue)}</p>` : ''}${data.welcome ? `<p style="color:var(--pr);font-weight:700">${esc(data.welcome)}</p>` : ''}`);
   showBarcode(data);
 }
 
