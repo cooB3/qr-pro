@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>عبور | الدعوة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{color-scheme:light;--bg:#f4f1ea;--sf:#fff;--tx:#1b2430;--mu:#6b7280;--bd:#e5e0d4;--pr:#0f3d3e;--ac:#c9a24b;--okb:#dcfce7;--ok:#15803d;--erb:#fee2e2;--er:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Tajawal,system-ui,sans-serif;font-size:16px;line-height:1.6;min-height:100vh;padding:18px 14px}
+main{max-width:420px;margin:0 auto}
+.brand{text-align:center;color:var(--pr);font-weight:800;font-size:22px;margin-bottom:12px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:22px 18px;text-align:center}
+h2{margin:0 0 8px;font-size:22px;color:var(--pr)}
+p{margin:6px 0;color:var(--mu)}
+input{width:100%;font:inherit;font-size:17px;padding:12px;border:1px solid var(--bd);border-radius:12px;margin:6px 0 12px;background:#fff;color:var(--tx)}
+label{display:block;text-align:start;font-size:14px;color:var(--mu)}
+.btn{width:100%;border:0;background:var(--pr);color:#fff;font:inherit;font-weight:800;font-size:17px;padding:13px;border-radius:12px;cursor:pointer;margin-top:6px;text-decoration:none;display:block}
+.btn.s{background:#fff;color:var(--tx);border:1px solid var(--bd)}
+.btn.g{background:var(--ac);color:#1b2430}
+.btns{display:grid;gap:10px;margin-top:16px}
+.msg{padding:10px;border-radius:12px;margin-top:10px;font-size:15px}
+.err{background:var(--erb);color:var(--er)}
+.okb{background:var(--okb);color:var(--ok)}
+#qr{margin:14px auto;width:250px;max-width:100%}
+#qr img{width:100%;display:block;border-radius:10px}
+.code{font-family:ui-monospace,monospace;direction:ltr;font-size:18px;letter-spacing:1px;margin:8px 0}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">🎟️ عبور</div>
+  <div id="app" class="card"><p>جارٍ التحميل...</p></div>
+</main>
+
+<script>
+const sb = supabase.createClient('https://rkqgzmnmuyoaypuiihni.supabase.co', 'sb_publishable_vJSc2jJflbqcd_pe3LCMAQ_yQ2S7Ffg');
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TOKEN = () => location.hash.replace('#', '').trim();
+const S = { name: '', answer: '' };
+
+// الرقم بأي صيغة يصبح 966...
+function normPhone(raw) {
+  let d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('966')) return d;
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length === 9 && d.startsWith('5')) return '966' + d;
+  return d;
+}
+
+const FRIENDLY = {
+  'guest limit': 'اكتمل عدد المدعوين، شكرًا لتفاعلك.',
+  'invalid phone': 'رقم الجوال غير صحيح، تأكد منه.',
+  'event closed': 'انتهت مهلة هذه الدعوة.',
+  'name required': 'اكتب اسمك كاملًا.',
+  'invalid link': 'الرابط غير صالح.',
+  'not listed': 'رقمك غير موجود في قائمة المدعوين لهذه المناسبة.'
+};
+function friendly(m) {
+  const k = Object.keys(FRIENDLY).find(x => (m || '').includes(x));
+  return k ? FRIENDLY[k] : 'تعذّر الإرسال، حاول مرة أخرى.';
+}
+
+function card(html) { $('#app').innerHTML = html; }
+function msg(text, ok) { const el = $('#m'); if (el) { el.className = 'msg ' + (ok ? 'okb' : 'err'); el.textContent = text; } }
+
+/* ====== أول تحميل ====== */
+async function boot() {
+  const t = TOKEN();
+  if (!t) return card('<h2>الرابط غير مكتمل</h2><p>افتح الرابط الذي وصلك في الدعوة.</p>');
+  const { data, error } = await sb.rpc('rsvp_info', { p_token: t });
+  if (error || !data) return card('<h2>تعذّر فتح الدعوة</h2><p>حاول مرة أخرى بعد قليل.</p>');
+  if (data.state === 'invalid') return card('<h2>الرابط غير صالح</h2><p>تأكد من نسخ الرابط كاملًا.</p>');
+  if (data.state === 'closed') return card(`<h2>${esc(data.name)}</h2><p>انتهت مهلة هذه الدعوة.</p>`);
+  if (data.state === 'full') return card(`<h2>${esc(data.name)}</h2><p>اكتمل عدد المدعوين، شكرًا لتفاعلك.</p>`);
+  S.event = data.name;
+  choose();
+}
+
+/* ====== القبول أو الاعتذار ====== */
+function choose() {
+  card(`<h2>${esc(S.event)}</h2>
+    <p>يسعدنا تأكيد حضورك.</p>
+    <div class="btns">
+      <button class="btn g" onclick="ask('accept')">✅ أقبل الدعوة</button>
+      <button class="btn s" onclick="ask('decline')">❌ أعتذر عن الحضور</button>
+    </div>`);
+}
+
+function ask(answer) {
+  S.answer = answer;
+  const acc = answer === 'accept';
+  card(`<h2>${acc ? 'أكّد بياناتك' : 'نأسف لعدم حضورك'}</h2>
+    <label>اسمك كاملًا</label>
+    <input id="nm" autocomplete="name">
+    ${acc ? `<label>رقم جوالك (تصلك عليه دعوتك وباركودك)</label>
+    <input id="ph" type="tel" inputmode="numeric" style="direction:ltr" placeholder="05xxxxxxxx">` : ''}
+    <button class="btn ${acc ? 'g' : 's'}" onclick="submit()">إرسال</button>
+    <button class="btn s" style="margin-top:8px" onclick="choose()">رجوع</button>
+    <div id="m"></div>`);
+}
+
+async function submit() {
+  const name = $('#nm').value.trim();
+  const phone = S.answer === 'accept' ? normPhone($('#ph').value) : '';
+  if (name.length < 2) return msg('اكتب اسمك كاملًا', false);
+  if (S.answer === 'accept' && phone && !/^[0-9]{11,15}$/.test(phone)) return msg('رقم الجوال غير صحيح، تأكد منه', false);
+
+  const { data, error } = await sb.rpc('rsvp_respond', {
+    p_token: TOKEN(), p_answer: S.answer, p_name: name, p_phone: phone
+  });
+  if (error) return msg(friendly(error.message), false);
+
+  if (data.result === 'declined') return card('<h2>شكرًا لردك</h2><p>نأمل أن نراك في مناسبة أخرى.</p>');
+  if (data.result === 'exists') return msg('هذا الرقم مسجل مسبقًا في هذه الدعوة. تواصل مع أصحاب الحفلة.', false);
+  showBarcode(data);
+}
+
+/* ====== الباركود الخاص بالمدعو ====== */
+function showBarcode(d) {
+  const when = [d.starts, d.ends].filter(Boolean).map(x => new Date(x + 'T00:00').toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' })).join(' - ');
+  card(`<h2>${esc(d.event || 'الدعوة')}</h2>
+    <p>أهلًا ${esc(d.name)}، تم تأكيد حضورك.</p>
+    ${when ? `<p>📅 ${esc(when)}</p>` : ''}
+    ${d.venue ? `<p>📍 ${esc(d.venue)}</p>` : ''}
+    ${d.welcome ? `<p style="color:var(--pr);font-weight:700">${esc(d.welcome)}</p>` : ''}
+    <div id="qr"></div>
+    <div class="code">${esc(d.code)}</div>
+    <p>أبرز هذا الباركود عند الاستقبال، واحفظ الصفحة أو الصورة.</p>
+    <a class="btn s" id="dl" download="${esc(d.code)}.png">تنزيل الباركود</a>`);
+  const box = document.createElement('div');
+  new QRCode(box, { text: d.code, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M });
+  const url = box.querySelector('canvas') ? box.querySelector('canvas').toDataURL('image/png') : box.querySelector('img').src;
+  $('#qr').innerHTML = `<img src="${url}" alt="باركود">`;
+  $('#dl').href = url;
+}
+
+boot();
+</script>
+</body>
+</html>
