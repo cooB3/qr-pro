@@ -469,15 +469,40 @@ async function saveDesign() {
   vMsgs();
 }
 
+async function saveEventInfo() {
+  const upd = { barcode_mode: $('#bm').value, venue: $('#vn').value.trim(), welcome_msg: $('#wm').value.trim() };
+  const { error } = await sb.from('events').update(upd).eq('id', S.ev.id);
+  if (error) return alert('تعذّر الحفظ: ' + error.message);
+  Object.assign(S.ev, upd);
+  alert('تم الحفظ');
+}
+
+async function setSend(on) {
+  if (on) {
+    const { data: g } = await sb.from('guests').select('id').eq('event_id', S.ev.id).eq('msg_status', 'pending').not('phone', 'is', null).limit(1);
+    if (!g || !g.length) return alert('لا يوجد مدعوون بأرقام ينتظرون الإرسال.');
+    if (!confirm('سيبدأ الإرسال بفاصل 30 ثانية بين كل رسالة. متابعة؟')) return;
+  }
+  const { error } = await sb.from('events').update({ send_requested: on }).eq('id', S.ev.id);
+  if (error) return alert('تعذّر التغيير: ' + error.message);
+  S.ev.send_requested = on;
+  vMsgs();
+}
+
 /* ====== الرسائل ====== */
 function spin(t, g) {
   let h = 7; for (const c of g.id) h = (h * 31 + c.charCodeAt(0)) | 0;
   return t.replace(/\{([^{}|]+(?:\|[^{}|]+)+)\}/g, (_, a) => { const o = a.split('|'); return o[Math.abs(h + a.length) % o.length]; });
 }
+function rsvpLink() {
+  return `https://coob3.github.io/qr-pro/rsvp.html#${S.ev.rsvp_token}`;
+}
+
 function msgText(g) {
   return spin(S.ev.msg_template || DEF_MSG, g)
     .replace(/\{name\}/g, g.name).replace(/\{first\}/g, (g.name || '').split(' ')[0])
-    .replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code);
+    .replace(/\{event\}/g, S.ev.name).replace(/\{code\}/g, g.code)
+    .replace(/\{rsvp\}/g, rsvpLink());
 }
 
 async function vMsgs() {
@@ -490,12 +515,28 @@ async function vMsgs() {
   <div class="card">
     <h2>💬 نص الدعوة</h2>
     <textarea id="mt" rows="5">${esc(tpl)}</textarea>
-    <p class="mu">المتغيرات: {name} الاسم الكامل، {first} الاسم الأول، {event} المناسبة، {code} الكود. ولتنويع النص اكتب الصيغ بين أقواس هكذا: {مرحبا|هلا|حيّاك الله}، فيختار النظام صيغة مختلفة لكل مدعو.</p>
+    <p class="mu">المتغيرات: {name} الاسم الكامل، {first} الاسم الأول، {event} المناسبة، {code} الكود، {rsvp} رابط القبول والاعتذار. ولتنويع النص اكتب الصيغ بين أقواس هكذا: {مرحبا|هلا|حيّاك الله}، فيختار النظام صيغة مختلفة لكل مدعو.</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s" onclick="saveMsgTpl()">حفظ النص</button></div>
     <div id="mm"></div>
     <label style="margin-top:12px">صورة الدعوة (يُضاف عليها باركود كل مدعو تلقائيًا)</label>
     <input type="file" accept="image/*" onchange="uploadCustom(this)">
     ${S.custom ? `<div style="position:relative;max-width:260px;margin-top:8px"><img src="${S.custom.src}" style="width:100%;display:block;border-radius:10px"><div style="position:absolute;left:${S.custom.x * 100}%;top:${S.custom.y * 100}%;width:${S.custom.s * 100}%;aspect-ratio:1;background:#fff;opacity:.9"></div></div><div style="margin-top:6px"><button class="btn g" onclick="saveInvite()">حفظ الدعوة على السيرفر</button></div><p class="mu">مكان الباركود يمكن تعديله من تبويب البطاقات ← دعوتك الخاصة.</p>` : ''}
+  </div>
+  <div class="card">
+    <h2>⚙️ بيانات الدعوة</h2>
+    <label>نوع الباركود</label>
+    <select id="bm">
+      <option value="general" ${S.ev.barcode_mode !== 'custom' ? 'selected' : ''}>عام: يسجّل المدعو نفسه من الرابط</option>
+      <option value="custom" ${S.ev.barcode_mode === 'custom' ? 'selected' : ''}>مخصص: للأرقام المدرجة في القائمة فقط</option>
+    </select>
+    <div style="margin-top:6px"><label>المكان</label><input id="vn" value="${esc(S.ev.venue || '')}"></div>
+    <div style="margin-top:6px"><label>رسالة الترحيب على الباركود</label><input id="wm" value="${esc(S.ev.welcome_msg || 'ننتظركم')}"></div>
+    <button class="btn" style="margin-top:8px" onclick="saveEventInfo()">حفظ</button>
+    <hr style="border:0;border-top:1px solid var(--bd);margin:14px 0">
+    <h2>📤 الإرسال الآلي</h2>
+    <p class="mu">الحالة: ${S.ev.send_requested ? '<span class="tag t-ok">جارٍ الإرسال</span>' : '<span class="tag t-mu">متوقف</span>'}. تصل الرسائل بفاصل 30 ثانية، ويُرسل كل مدعو تصميمه مع باركوده.</p>
+    <button class="btn g" onclick="setSend(true)">بدء الإرسال</button>
+    <button class="btn s" onclick="setSend(false)">إيقاف</button>
   </div>
   <div class="card"><h2>معاينة</h2><div class="bubble">${esc(withPhone[0] ? msgText(withPhone[0]) : 'أضف مدعوًا برقم جوال لترى المعاينة.')}</div></div>
   <div class="card">
