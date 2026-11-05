@@ -29,6 +29,20 @@ label{display:block;text-align:start;font-size:14px;color:var(--mu)}
 #qr{margin:14px auto;width:250px;max-width:100%}
 #qr img{width:100%;display:block;border-radius:10px}
 .code{font-family:ui-monospace,monospace;direction:ltr;font-size:18px;letter-spacing:1px;margin:8px 0}
+.ticket{min-height:100vh;display:flex;flex-direction:column;background:linear-gradient(165deg,#0f3d3e 0%,#06201f 100%);color:#fff;padding:24px 18px;text-align:center}
+.tk-top{padding-top:8px}
+.tk-ev{font-size:26px;font-weight:800;color:#f3e3b0;line-height:1.3}
+.tk-meta{font-size:15px;opacity:.9;margin-top:6px}
+.tk-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px 0}
+.tk-name{font-size:22px;font-weight:800}
+.tk-mid #qr{background:#fff;padding:16px;border-radius:22px;box-shadow:0 0 0 4px #c9a24b55,0 18px 40px #0008;width:min(78vw,340px);margin:6px auto}
+.tk-mid #qr img{width:100%;display:block}
+.tk-mid .code{background:transparent;color:#f3e3b0;font-size:18px;letter-spacing:2px}
+.tk-welcome{margin-top:6px;font-size:20px;font-weight:700;color:#f3e3b0}
+.tk-foot{display:grid;gap:10px;padding-bottom:12px}
+.tk-foot .btn{width:100%}
+.tk-foot .btn.s{background:transparent;color:#fff;border:1px solid #ffffff66}
+.tk-foot .btn.g{background:#c9a24b;color:#1b2430}
 </style>
 </head>
 <body>
@@ -120,24 +134,34 @@ async function submit() {
 
   if (data.result === 'declined') return card('<h2>شكرًا لردك</h2><p>نأمل أن نراك في مناسبة أخرى.</p>');
   if (data.result === 'exists') return msg('هذا الرقم مسجل مسبقًا في هذه الدعوة. تواصل مع أصحاب الحفلة.', false);
-  if (!data.code) return card(`<h2>شكرًا ${esc(data.name)}</h2><p>تم تسجيل قبولك لدعوة ${esc(data.event || '')}.</p>${data.venue ? `<p>📍 ${esc(data.venue)}</p>` : ''}${data.welcome ? `<p style="color:var(--pr);font-weight:700">${esc(data.welcome)}</p>` : ''}`);
-  showBarcode(data);
+  const { data: info } = await sb.rpc('rsvp_info', { p_token: TOKEN() });
+  const ev = info || {};
+  if (!data.code) return card(`<h2>شكرًا ${esc(data.name)}</h2><p>تم تسجيل قبولك لدعوة ${esc(ev.name || '')}.</p>${ev.venue ? `<p>📍 ${esc(ev.venue)}</p>` : ''}${ev.welcome ? `<p style="color:var(--pr);font-weight:700">${esc(ev.welcome)}</p>` : ''}`);
+  showBarcode({ guest: data.name, code: data.code, event: ev.name, venue: ev.venue, welcome: ev.welcome, map: ev.map, starts: ev.starts, ends: ev.ends });
 }
 
 /* ====== الباركود الخاص بالمدعو ====== */
 function showBarcode(d) {
   const when = [d.starts, d.ends].filter(Boolean).map(x => new Date(x + 'T00:00').toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' })).join(' - ');
-  card(`<h2>${esc(d.event || 'الدعوة')}</h2>
-    <p>أهلًا ${esc(d.name)}، تم تأكيد حضورك.</p>
-    ${when ? `<p>📅 ${esc(when)}</p>` : ''}
-    ${d.venue ? `<p>📍 ${esc(d.venue)}</p>` : ''}
-    ${d.welcome ? `<p style="color:var(--pr);font-weight:700">${esc(d.welcome)}</p>` : ''}
-    <div id="qr"></div>
-    <div class="code">${esc(d.code)}</div>
-    <p>أبرز هذا الباركود عند الاستقبال، واحفظ الصفحة أو الصورة.</p>
-    <a class="btn s" id="dl" download="${esc(d.code)}.png">تنزيل الباركود</a>`);
+  document.body.innerHTML = `<div class="ticket">
+    <div class="tk-top">
+      <div class="tk-ev">${esc(d.event || 'الدعوة')}</div>
+      ${when ? `<div class="tk-meta">📅 ${esc(when)}</div>` : ''}
+      ${d.venue ? `<div class="tk-meta">📍 ${esc(d.venue)}</div>` : ''}
+    </div>
+    <div class="tk-mid">
+      <div class="tk-name">أهلًا ${esc(d.guest)}</div>
+      <div id="qr"></div>
+      <div class="code">${esc(d.code)}</div>
+      ${d.welcome ? `<div class="tk-welcome">${esc(d.welcome)}</div>` : ''}
+    </div>
+    <div class="tk-foot">
+      ${d.map ? `<a class="btn s" href="${esc(d.map)}" target="_blank" rel="noopener">📍 افتح الموقع على الخريطة</a>` : ''}
+      <a class="btn g" id="dl" download="${esc(d.code)}.png">تنزيل الباركود</a>
+    </div>
+  </div>`;
   const box = document.createElement('div');
-  new QRCode(box, { text: d.code, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M });
+  new QRCode(box, { text: d.code, width: 480, height: 480, correctLevel: QRCode.CorrectLevel.M });
   const url = box.querySelector('canvas') ? box.querySelector('canvas').toDataURL('image/png') : box.querySelector('img').src;
   $('#qr').innerHTML = `<img src="${url}" alt="باركود">`;
   $('#dl').href = url;
