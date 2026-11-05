@@ -81,7 +81,7 @@ code{font-family:ui-monospace,monospace;background:var(--bg);padding:1px 6px;bor
 /* ====== الإعدادات ====== */
 const SUPA_URL = 'https://rkqgzmnmuyoaypuiihni.supabase.co';
 const SUPA_KEY = 'sb_publishable_vJSc2jJflbqcd_pe3LCMAQ_yQ2S7Ffg';
-const APP_URL  = 'https://coob3.github.io/qr-pro/app.html'; // بدّله بعد نشر صفحة العملاء
+const APP_URL  = 'https://YOUR-APP-SITE.netlify.app/app.html'; // بدّله بعد نشر صفحة العملاء
 
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const $ = s => document.querySelector(s);
@@ -201,6 +201,7 @@ function cardHTML(e) {
     </div>
     <button class="btn s" data-t="${esc(link)}" onclick="copyText(this.dataset.t)">نسخ الرابط</button>
     <button class="btn s" onclick="extId('${e.id}')">+7 أيام</button>
+    <button class="btn s" onclick="styleId('${e.id}')">نوع: ${e.invite_style === 'rsvp_link' ? 'رابط' : 'باركود'}</button>
     <button class="btn s" onclick="toggleId('${e.id}')">${e.suspended ? 'تفعيل' : 'إيقاف'}</button>
   </div>`;
 }
@@ -235,6 +236,7 @@ function vNew() {
       <div><label>اسم العميل</label><input id="c"></div>
       <div><label>من تاريخ</label><input id="sd" type="date"></div>
       <div><label>إلى تاريخ</label><input id="ed" type="date"></div>
+      <div><label>نوع الدعوة</label><select id="is"><option value="barcode">تقليدية: باركود جاهز لكل مدعو</option><option value="rsvp_link">رابط قبول واعتذار (بدون باركود)</option></select></div>
       <div><label>الحد الأقصى للمدعوين</label><input id="gl" type="number" value="100"></div>
       <div><label>حسابات الاستقبال (0 إلى 3)</label><input id="sl" type="number" min="0" max="3" value="1"></div>
       <div><label>يفتح الرابط في</label><input id="ko" type="datetime-local"></div>
@@ -267,6 +269,7 @@ async function createClient() {
   const { data, error } = await sb.rpc('admin_create_client', p);
   btn.disabled = false;
   if (error) return notice('#cm', 'تعذّر الإنشاء: ' + error.message, false);
+  await sb.from('events').update({ invite_style: $('#is').value }).eq('id', data.event_id);
 
   const link = baseLink() + '#' + data.token;
   const text = `حيّاك الله،\nرابط حفلتك: ${link}\nاسم المستخدم: ${p.p_username}\nكلمة المرور: ${p.p_password}\nيعمل الرابط من ${$('#ko').value || 'الآن'} حتى ${$('#kc').value || 'نهاية المناسبة'}`;
@@ -308,6 +311,15 @@ async function extId(id) {
   const base = e.closes_at && new Date(e.closes_at) > new Date() ? new Date(e.closes_at) : new Date();
   base.setDate(base.getDate() + 7);
   const { error } = await sb.from('events').update({ closes_at: base.toISOString() }).eq('id', id);
+  if (error) return alert('خطأ: ' + error.message);
+  show(curSec());
+}
+
+async function styleId(id) {
+  const e = EV.find(x => x.id === id);
+  const next = e.invite_style === 'rsvp_link' ? 'barcode' : 'rsvp_link';
+  if (!confirm(`تغيير نوع الدعوة إلى: ${next === 'barcode' ? 'تقليدية بباركود' : 'رابط قبول واعتذار'}؟`)) return;
+  const { error } = await sb.from('events').update({ invite_style: next }).eq('id', id);
   if (error) return alert('خطأ: ' + error.message);
   show(curSec());
 }
