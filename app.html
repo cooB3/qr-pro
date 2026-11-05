@@ -514,7 +514,7 @@ async function saveDesign() {
 }
 
 async function saveEventInfo() {
-  const upd = { barcode_mode: $('#bm').value, venue: $('#vn').value.trim(), welcome_msg: $('#wm').value.trim() };
+  const upd = { barcode_mode: $('#bm').value, venue: $('#vn').value.trim(), welcome_msg: $('#wm').value.trim(), map_url: $('#mp').value.trim() || null };
   const { error } = await sb.from('events').update(upd).eq('id', S.ev.id);
   if (error) return alert('تعذّر الحفظ: ' + error.message);
   Object.assign(S.ev, upd);
@@ -574,7 +574,8 @@ async function vMsgs() {
       <option value="general" ${S.ev.barcode_mode !== 'custom' ? 'selected' : ''}>عام: يسجّل المدعو نفسه من الرابط</option>
       <option value="custom" ${S.ev.barcode_mode === 'custom' ? 'selected' : ''}>مخصص: للأرقام المدرجة في القائمة فقط</option>
     </select>
-    <div style="margin-top:6px"><label>المكان</label><input id="vn" value="${esc(S.ev.venue || '')}"></div>
+    <div style="margin-top:6px"><label>المكان (اسم أو عنوان)</label><input id="vn" value="${esc(S.ev.venue || '')}"></div>
+    <div style="margin-top:6px"><label>رابط الموقع على الخريطة (Google Maps)</label><input id="mp" value="${esc(S.ev.map_url || '')}" style="direction:ltr" placeholder="https://maps.app.goo.gl/..."></div>
     <div style="margin-top:6px"><label>رسالة الترحيب على الباركود</label><input id="wm" value="${esc(S.ev.welcome_msg || 'ننتظركم')}"></div>
     <button class="btn" style="margin-top:8px" onclick="saveEventInfo()">حفظ</button>
     <hr style="border:0;border-top:1px solid var(--bd);margin:14px 0">
