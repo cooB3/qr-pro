@@ -239,7 +239,7 @@ async function route() {
     if (!ev.pkg_codes) return message('المسح غير مفعّل', 'تواصل مع الإدارة.');
     S.tab = 'scan';
   } else {
-    S.tab = 'guests';
+    S.tab = S.ev.invite_style === 'rsvp_link' ? 'home' : 'guests';
   }
   render();
 }
@@ -247,6 +247,12 @@ async function route() {
 /* ====== الواجهة ====== */
 function tabsList() {
   if (S.role === 'reception') return [['scan', '📷 المسح']];
+  if (S.ev.invite_style === 'rsvp_link') {
+    const t = [['home', '🔗 الرابط والقبول']];
+    if (S.ev.pkg_codes) t.push(['staff', '🛂 الاستقبال'], ['scan', '📷 المسح']);
+    t.push(['stats', '📊 الإحصائيات']);
+    return t;
+  }
   const t = [['guests', '👥 المدعوون']];
   if (S.ev.pkg_msgs)  t.push(['msgs', '💬 الرسائل']);
   if (S.ev.pkg_cards) t.push(['cards', '🪪 البطاقات']);
@@ -265,7 +271,27 @@ async function setTab(t) {
   S.tab = t; render();
 }
 
-function paint() { ({ guests: vGuests, msgs: vMsgs, cards: vCards, staff: vStaff, scan: vScan, stats: vStats })[S.tab](); }
+function paint() { ({ home: vHome, guests: vGuests, msgs: vMsgs, cards: vCards, staff: vStaff, scan: vScan, stats: vStats })[S.tab](); }
+
+/* ====== الشاشة الأولى لدعوة الرابط العام ====== */
+async function vHome() {
+  const v = $('#view');
+  const link = `https://coob3.github.io/qr-pro/rsvp.html#${S.ev.rsvp_token}`;
+  v.innerHTML = '<div class="card mu">جارٍ التحميل...</div>';
+  const { data, error } = await sb.from('rsvp_responses').select('name,phone,answer,created_at')
+    .eq('event_id', S.ev.id).order('created_at', { ascending: false });
+  if (error) return v.innerHTML = `<div class="msg err">${esc(error.message)}</div>`;
+  const acc = data.filter(x => x.answer === 'accept'), dec = data.filter(x => x.answer === 'decline');
+  v.innerHTML = `
+  <div class="card">
+    <h2>🔗 رابط الدعوة العام</h2>
+    <p class="mu">أرسل هذا الرابط للناس، ويختار كل واحد القبول أو الاعتذار.</p>
+    <code style="white-space:normal">${esc(link)}</code>
+    <div style="margin-top:8px"><button class="btn" onclick="navigator.clipboard.writeText('${link}').then(()=>alert('تم النسخ'))">نسخ الرابط</button></div>
+  </div>
+  <div class="grid">${stat(acc.length, 'قبلوا')}${stat(dec.length, 'اعتذروا')}</div>
+  <div class="card"><h2>الذين قبلوا</h2>${acc.map(x => `<div class="row"><div class="grow"><b>${esc(x.name)}</b><br><span class="mu" style="direction:ltr;display:inline-block">${esc(x.phone || '')}</span></div><span class="mu">${fmt(x.created_at)}</span></div>`).join('') || '<p class="mu">لم يقبل أحد بعد.</p>'}</div>`;
+}
 
 /* ====== بيانات المدعوين ====== */
 async function loadGuests() {
