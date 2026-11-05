@@ -430,8 +430,19 @@ async function composeTemplate(g, idx) {
   }
 }
 
-// يختار طريقة التركيب حسب اختيار صاحب الحفلة
+// في دعوة الرابط: الصورة كما رفعها العميل بدون باركود
+async function plainInvite() {
+  if (!S.custom) return null;
+  const img = await loadImg(S.custom.src);
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', .92));
+}
+
+// يختار طريقة التركيب حسب نوع الدعوة وبطاقة العميل
 function composeFor(g) {
+  if (S.ev.invite_style === 'rsvp_link') return plainInvite();
   const mode = currentMode();
   if (mode === 'mine' && S.custom) return composeInvite(g);
   if (mode === 'template') return composeTemplate(g, S.ev.invite_tpl ?? 0);
@@ -440,6 +451,12 @@ function composeFor(g) {
 
 // معاينة التصميم المختار، مع باركود افتراضي يوضح مكان الباركود الحقيقي
 function previewHTML() {
+  if (S.ev.invite_style === 'rsvp_link') {
+    return S.custom
+      ? `<img src="${S.custom.src}" style="width:170px;display:block;margin:6px auto;border-radius:8px">
+         <p class="mu" style="text-align:center">الدعوة تُرسل بالصورة والرابط، بدون باركود.</p>`
+      : '<p class="mu">ارفع صورة الدعوة لتظهر هنا.</p>';
+  }
   const sample = { id: 'sample', name: 'اسم المدعو', category: 'guest', code: 'SAMPLE-CODE-0000' };
   const mode = currentMode();
   const inner = (mode === 'mine' && S.custom) ? customHTML(sample)
@@ -454,6 +471,7 @@ function previewHTML() {
 async function downloadDesign(g) {
   try {
     const blob = await composeFor(g);
+    if (!blob) return;
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `invite-${(g.name || 'guest').split(' ')[0]}.png`;
@@ -524,6 +542,7 @@ async function vMsgs() {
   </div>
   <div class="card">
     <h2>⚙️ بيانات الدعوة</h2>
+    <p class="mu">نوع الدعوة: <b>${S.ev.invite_style === 'rsvp_link' ? 'رابط قبول واعتذار (بدون باركود)' : 'تقليدية بباركود جاهز'}</b> (يحدده المسؤول)</p>
     <label>نوع الباركود</label>
     <select id="bm">
       <option value="general" ${S.ev.barcode_mode !== 'custom' ? 'selected' : ''}>عام: يسجّل المدعو نفسه من الرابط</option>
@@ -599,6 +618,7 @@ async function shareWithImage(id) {
   if (!g) return;
   try {
     const blob = await composeFor(g);
+    if (!blob) return alert('لا توجد صورة دعوة، ارفع صورتك أولًا.');
     const file = new File([blob], `invite-${g.code}.jpg`, { type: 'image/jpeg' });
     if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
       const a = document.createElement('a');
